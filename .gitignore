@@ -1,0 +1,15 @@
+/design_guideline/
+/.omo/
+/.codegraph/
+
+# Build artifacts
+tee-vfhe/build/
+tee-vfhe/Testing/
+
+# Test artifacts
+quote.dat
+report.dat
+
+# Large downloads / vendored source trees (installed to /usr/local)
+thirdparty/openfhe-development/
+thirdparty/openfhe-v1.5.1.tar.gz
