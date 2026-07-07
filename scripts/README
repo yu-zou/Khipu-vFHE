@@ -1,0 +1,57 @@
+scripts/ — tee-vfhe setup, build, and run scripts
+
+All scripts use `set -euo pipefail` and are safe to run multiple times
+(idempotent where possible). Run them from the repo root.
+
+SETUP & BUILD
+=============
+
+setup_tdx_env.sh
+    Verify and configure the TDX + OpenFHE build environment.
+    - Installs cmake via yum if missing.
+    - Verifies GCC >= 9 and cmake >= 3.16.3.
+    - Configures /etc/sgx_default_qcnl.conf with a PCCS_URL (warns and
+      continues if the file cannot be created).
+    - Verifies TDX attestation is available (/dev/tdx-attest or
+      libtdx_attest linkage).
+    - Updates the dynamic linker cache for /usr/local/lib.
+
+build_openfhe.sh
+    Download, build, and install OpenFHE v1.5.1 to /usr/local.
+    - Fetches the v1.5.1 release tarball and the cereal header-only
+      submodule (the tarball does not include git submodules).
+    - Configures with Release, shared libs, native optimizations;
+      disables examples/tests/benchmarks/extras.
+    - Builds with make -j$(nproc) (falls back to -j4 on OOM).
+    - Installs and runs ldconfig.
+
+build_project.sh
+    Configure and build tee-vfhe (server, client, benchmark runner).
+    - Runs cmake + make in tee-vfhe/build/.
+    - Reconfigures only when CMakeCache.txt is missing or CMakeLists.txt
+      changed; otherwise preserves the existing build.
+    - Verifies tee_server, tee_client, and benchmark/benchmark_runner
+      exist and are executable.
+
+RUN
+===
+
+run_server.sh [--port PORT] [extra args...]
+    Start the TDX+FHE server in the foreground (default port 8080, or
+    $PORT env var). Extra args are passed through to tee_server.
+    Press Ctrl+C to stop.
+
+run_client.sh [--host HOST] [--port PORT] [--workload ID]
+              [--expected-mr-td HEX] [extra args...]
+    Run the client against a started server.
+    Defaults: host 127.0.0.1, port 8080 (or $PORT), workload toy.
+    If --expected-mr-td is not given, reads the default from
+    scripts/expected_mrtd.txt (96 hex chars = 48-byte MR_TD placeholder).
+
+FILES
+=====
+
+expected_mrtd.txt
+    Default expected MR_TD value (96 hex zeros placeholder) used by
+    run_client.sh when --expected-mr-td is not provided. Replace with
+    the real measurement register value once the TEE is measured.
