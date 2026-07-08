@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_server.sh — Start the tee-vfhe TDX+FHE server in the foreground.
+# run_server.sh — Start the tee-vfhe-bgvrns TDX+FHE server in the foreground.
 #
 # Usage:
 #   ./scripts/run_server.sh [--port PORT] [extra args...]
@@ -12,7 +12,7 @@ set -euo pipefail
 # Resolve repo root (parent of scripts/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BIN="$REPO_ROOT/tee-vfhe/build/tee_server"
+BIN="$REPO_ROOT/tee-vfhe-bgvrns/build/tee_server"
 
 # --- 1. Binary check ---------------------------------------------------------
 if [ ! -x "$BIN" ]; then

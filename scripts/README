@@ -1,4 +1,4 @@
-scripts/ — tee-vfhe setup, build, and run scripts
+scripts/ - tee-vfhe-bgvrns (BGV prototype) setup, build, and run scripts
 
 All scripts use `set -euo pipefail` and are safe to run multiple times
 (idempotent where possible). Run them from the repo root.
@@ -26,32 +26,63 @@ build_openfhe.sh
     - Installs and runs ldconfig.
 
 build_project.sh
-    Configure and build tee-vfhe (server, client, benchmark runner).
-    - Runs cmake + make in tee-vfhe/build/.
+    Configure and build tee-vfhe-bgvrns (server, client, benchmark runner).
+    - Runs cmake + make in tee-vfhe-bgvrns/build/.
     - Reconfigures only when CMakeCache.txt is missing or CMakeLists.txt
       changed; otherwise preserves the existing build.
-    - Verifies tee_server, tee_client, and benchmark/benchmark_runner
-      exist and are executable.
+    - Verifies tee_server, tee_client, and benchmark_runner exist and are
+      executable in tee-vfhe-bgvrns/build/.
 
 RUN
 ===
 
 run_server.sh [--port PORT] [extra args...]
-    Start the TDX+FHE server in the foreground (default port 8080, or
+    Start the BGV TDX+FHE server in the foreground (default port 8080, or
     $PORT env var). Extra args are passed through to tee_server.
     Press Ctrl+C to stop.
 
 run_client.sh [--host HOST] [--port PORT] [--workload ID]
               [--expected-mr-td HEX] [extra args...]
-    Run the client against a started server.
+    Run the BGV client against a started server.
     Defaults: host 127.0.0.1, port 8080 (or $PORT), workload toy.
     If --expected-mr-td is not given, reads the default from
-    scripts/expected_mrtd.txt (96 hex chars = 48-byte MR_TD placeholder).
+    scripts/expected_mrtd.txt (96 hex chars = 48-byte MR_TD).
+
+INTEGRATION TEST
+================
+
+integration_test.sh
+    Full end-to-end integration test for tee-vfhe-bgvrns.
+    - Builds the project (build_project.sh).
+    - Starts the server, runs the client (workload=toy), stops the server.
+    - Restarts the server and runs the benchmark_runner with
+      --host 127.0.0.1 --port PORT --expected-mr-td HEX, capturing stdout
+      (CSV) to a file.
+    - Runs ctest.
+    - Verifies: client exit 0, transcript/attestation verification pass,
+      benchmark_runner exit 0, ctest exit 0, CSV has 11 lines (header +
+      10 BGV workloads: noop, toy, small, medium, micro_add, micro_mul,
+      micro_modswitch, micro_rotate, app_matvec, app_inference).
+
+BGV WORKLOADS (10)
+==================
+
+  noop            Identity pass-through (returns input ciphertext).
+  toy             EvalMult of two vectors (c1 * c2 mod 65537).
+  small           Dot product via EvalMult + EvalSum (32-element).
+  medium          64x64 matrix-vector multiply (masked diagonal method).
+  micro_add       EvalAdd(ct_a, ct_b).
+  micro_mul       EvalMult(ct_a, ct_b).
+  micro_modswitch ModReduce(ct_a) - preserves plaintext, drops RNS limb.
+  micro_rotate    EvalRotate(ct_a, 1).
+  app_matvec      Application-level matrix-vector multiply (power-of-two
+                   rotation keys to bound memory).
+  app_inference   Application-level inference workload.
 
 FILES
 =====
 
 expected_mrtd.txt
-    Default expected MR_TD value (96 hex zeros placeholder) used by
-    run_client.sh when --expected-mr-td is not provided. Replace with
-    the real measurement register value once the TEE is measured.
+    Default expected MR_TD value (96 hex chars) used by run_client.sh
+    when --expected-mr-td is not provided. Contains the current TDX
+    guest MR_TD measurement.

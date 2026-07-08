@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build_project.sh — Configure and build tee-vfhe (server, client, benchmark).
+# build_project.sh — Configure and build tee-vfhe-bgvrns (server, client, benchmark).
 #
 # Idempotent: preserves existing build/ contents; only runs cmake configure
 # if CMakeCache.txt is missing or CMakeLists.txt changed since last configure.
@@ -9,10 +9,10 @@ set -euo pipefail
 # Resolve repo root (parent of scripts/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PROJECT_DIR="$REPO_ROOT/tee-vfhe"
+PROJECT_DIR="$REPO_ROOT/tee-vfhe-bgvrns"
 BUILD_DIR="$PROJECT_DIR/build"
 
-echo "[build] Building tee-vfhe in $BUILD_DIR..."
+echo "[build] Building tee-vfhe-bgvrns in $BUILD_DIR..."
 
 # --- 1. Create build dir -----------------------------------------------------
 mkdir -p "$BUILD_DIR"
@@ -43,7 +43,7 @@ fi
 # --- 4. Verify binaries ------------------------------------------------------
 BIN_SERVER="$BUILD_DIR/tee_server"
 BIN_CLIENT="$BUILD_DIR/tee_client"
-BIN_BENCHMARK="$BUILD_DIR/benchmark/benchmark_runner"
+BIN_BENCHMARK="$BUILD_DIR/benchmark_runner"
 
 MISSING=0
 for bin in "$BIN_SERVER" "$BIN_CLIENT" "$BIN_BENCHMARK"; do

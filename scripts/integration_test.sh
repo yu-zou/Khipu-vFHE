@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# integration_test.sh — Full end-to-end integration test for tee-vfhe.
+# integration_test.sh — Full end-to-end integration test for tee-vfhe-bgvrns.
 #
 # Runs the complete flow on a TDX-capable VM:
 #   - Build project
@@ -21,7 +21,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-PROJECT_DIR="$REPO_ROOT/tee-vfhe"
+PROJECT_DIR="$REPO_ROOT/tee-vfhe-bgvrns"
 BUILD_DIR="$PROJECT_DIR/build"
 BENCHMARK_CSV="$BUILD_DIR/benchmark_results.csv"
 SERVER_LOG="$BUILD_DIR/server_integration_test.log"
@@ -146,10 +146,11 @@ if [ -f "$SCRIPT_DIR/expected_mrtd.txt" ]; then
 fi
 
 BENCH_RC=0
-"$BUILD_DIR/benchmark/benchmark_runner" \
-    --server "127.0.0.1:$PORT" \
+"$BUILD_DIR/benchmark_runner" \
+    --host 127.0.0.1 \
+    --port "$PORT" \
     --expected-mr-td "$EXPECTED_MRTD" \
-    --output "$BENCHMARK_CSV" || BENCH_RC=$?
+    > "$BENCHMARK_CSV" 2>"$BUILD_DIR/benchmark_runner.log" || BENCH_RC=$?
 echo "[integration] Benchmark runner exit code: $BENCH_RC"
 
 # Stop benchmark server
@@ -214,17 +215,17 @@ if [ "$CTEST_RC" -ne 0 ]; then
 fi
 echo "[integration] PASS: ctest exited 0"
 
-# 6. CSV must have 10 lines (header + 9 workloads)
+# 6. CSV must have 11 lines (header + 10 workloads)
 if [ ! -f "$BENCHMARK_CSV" ]; then
     echo "[integration] FAIL: benchmark CSV not found at $BENCHMARK_CSV"
     exit 1
 fi
 CSV_LINES=$(wc -l < "$BENCHMARK_CSV" | tr -d '[:space:]')
-if [ "$CSV_LINES" -ne 10 ]; then
-    echo "[integration] FAIL: benchmark CSV has $CSV_LINES lines (expected 10)"
+if [ "$CSV_LINES" -ne 11 ]; then
+    echo "[integration] FAIL: benchmark CSV has $CSV_LINES lines (expected 11)"
     exit 1
 fi
-echo "[integration] PASS: benchmark CSV has $CSV_LINES lines (expected 10)"
+echo "[integration] PASS: benchmark CSV has $CSV_LINES lines (expected 11)"
 
 # ---------------------------------------------------------------------------
 # Summary
@@ -236,7 +237,7 @@ echo "========================================================================"
 echo "  client RC  = $CLIENT_RC (expected 0)"
 echo "  bench RC   = $BENCH_RC  (expected 0)"
 echo "  ctest RC   = $CTEST_RC  (expected 0)"
-echo "  CSV lines  = $CSV_LINES (expected 10)"
+echo "  CSV lines  = $CSV_LINES (expected 11)"
 echo ""
 echo "  Transcript verification:  PASS"
 echo "  Attestation verification: PASS"

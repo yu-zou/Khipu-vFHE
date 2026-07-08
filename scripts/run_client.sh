@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# run_client.sh — Run the tee-vfhe client against a running server.
+# run_client.sh — Run the tee-vfhe-bgvrns client against a running server.
 #
 # Usage:
 #   ./scripts/run_client.sh [--host HOST] [--port PORT]
@@ -18,7 +18,7 @@ set -euo pipefail
 # Resolve repo root (parent of scripts/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-BIN="$REPO_ROOT/tee-vfhe/build/tee_client"
+BIN="$REPO_ROOT/tee-vfhe-bgvrns/build/tee_client"
 EXPECTED_MRTD_FILE="$SCRIPT_DIR/expected_mrtd.txt"
 
 # --- 1. Binary check ---------------------------------------------------------
