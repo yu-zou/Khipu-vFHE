@@ -157,7 +157,7 @@ target_include_directories(tee_server PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(tee_server PRIVATE
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common
@@ -177,7 +177,7 @@ target_include_directories(tee_client PRIVATE
 )
 target_link_libraries(tee_client PRIVATE
   tee_verifier
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common
@@ -201,7 +201,7 @@ target_include_directories(benchmark_runner PRIVATE
 )
 target_link_libraries(benchmark_runner PRIVATE
   tee_verifier
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common

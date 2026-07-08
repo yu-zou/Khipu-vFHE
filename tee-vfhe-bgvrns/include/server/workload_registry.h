@@ -22,7 +22,29 @@ struct Workload {
 
 using WorkloadRegistry = std::map<std::string, Workload>;
 
-WorkloadRegistry& get_workload_registry();
-void register_all_workloads();
+// Meyer's singleton: thread-safe, guaranteed initialized on first use.
+// This avoids static initialization order issues between workload .cpp files
+// and the registry itself.
+inline WorkloadRegistry& get_workload_registry() {
+    static WorkloadRegistry registry;
+    return registry;
+}
+
+// Explicit registration function — a no-op when using static self-registration,
+// but kept for code clarity and forward compatibility.
+inline void register_all_workloads() {
+    // Workloads self-register via static Register instances in each .cpp file.
+    // This function exists so callers can explicitly trigger the pattern.
+    // get_workload_registry() is already populated by the time main() runs.
+    (void)get_workload_registry();
+}
+
+// Self-registration helper: construct one as a static variable in each workload
+// .cpp file to register the workload at static initialization time.
+struct Register {
+    Register(const std::string& id, Workload w) {
+        get_workload_registry().emplace(id, std::move(w));
+    }
+};
 
 }  // namespace tee

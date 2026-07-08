@@ -4,9 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <fstream>
-#include <functional>
 #include <iostream>
-#include <map>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -18,6 +16,7 @@
 #include "common/hashing.h"
 #include "common/serialization.h"
 #include "common/tcp_transport.h"
+#include "server/workload_registry.h"
 #include "openfhe.h"
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
@@ -25,128 +24,6 @@
 
 using namespace tee;
 using namespace lbcrypto;
-
-// ── Workload registry (inline; workload files are stubs) ──────────────────────
-
-namespace {
-
-using CT = Ciphertext<DCRTPoly>;
-using CC = CryptoContext<DCRTPoly>;
-
-struct Workload {
-    std::function<CC()> make_context;
-    std::function<CT(CC, const std::vector<CT>&)> eval;
-    std::function<void(CC, const KeyPair<DCRTPoly>&)> gen_keys;
-};
-
-using WorkloadRegistry = std::map<std::string, Workload>;
-
-WorkloadRegistry g_registry;
-
-WorkloadRegistry& get_workload_registry() { return g_registry; }
-
-// ── BGV workload definitions ──────────────────────────────────────────────────
-
-CC make_bgv_context(int depth = 2, int batch = 64, int ptm = 65537) {
-    CCParams<CryptoContextBGVRNS> params;
-    params.SetMultiplicativeDepth(depth);
-    params.SetPlaintextModulus(ptm);
-    params.SetBatchSize(batch);
-    params.SetSecurityLevel(HEStd_128_classic);
-    params.SetKeySwitchTechnique(BV);
-    params.SetDigitSize(4);
-    params.SetScalingTechnique(FIXEDMANUAL);
-    params.SetFirstModSize(60);
-    auto cc = GenCryptoContext(params);
-    cc->Enable(PKE);
-    cc->Enable(KEYSWITCH);
-    cc->Enable(LEVELEDSHE);
-    return cc;
-}
-
-CT noop_eval(CC /*cc*/, const std::vector<CT>& inputs) {
-    if (inputs.empty()) throw std::runtime_error("noop requires at least 1 input");
-    return inputs[0];
-}
-
-CT toy_eval(CC cc, const std::vector<CT>& inputs) {
-    if (inputs.size() != 2) throw std::runtime_error("toy requires exactly 2 inputs");
-    return cc->EvalMult(inputs[0], inputs[1]);
-}
-
-CT micro_add_eval(CC cc, const std::vector<CT>& inputs) {
-    if (inputs.size() != 2) throw std::runtime_error("micro_add requires exactly 2 inputs");
-    return cc->EvalAdd(inputs[0], inputs[1]);
-}
-
-CT micro_mul_eval(CC cc, const std::vector<CT>& inputs) {
-    if (inputs.size() != 2) throw std::runtime_error("micro_mul requires exactly 2 inputs");
-    return cc->EvalMult(inputs[0], inputs[1]);
-}
-
-CT micro_rotate_eval(CC cc, const std::vector<CT>& inputs) {
-    if (inputs.empty()) throw std::runtime_error("micro_rotate requires at least 1 input");
-    return cc->EvalAtIndex(inputs[0], 1);
-}
-
-CT small_eval(CC cc, const std::vector<CT>& inputs) {
-    if (inputs.size() != 2) throw std::runtime_error("small requires exactly 2 inputs");
-    auto prod = cc->EvalMult(inputs[0], inputs[1]);
-    auto result = prod;
-    int batch = 64;
-    for (int i = 1; i < batch; i *= 2) {
-        auto rotated = cc->EvalAtIndex(result, i);
-        result = cc->EvalAdd(result, rotated);
-    }
-    return result;
-}
-
-void register_all_workloads() {
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(1, 64, 65537); };
-        w.eval = noop_eval;
-        g_registry["noop"] = std::move(w);
-    }
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(1, 64, 65537); };
-        w.eval = toy_eval;
-        g_registry["toy"] = std::move(w);
-    }
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(1, 64, 65537); };
-        w.eval = micro_add_eval;
-        g_registry["micro_add"] = std::move(w);
-    }
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(1, 64, 65537); };
-        w.eval = micro_mul_eval;
-        g_registry["micro_mul"] = std::move(w);
-    }
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(1, 64, 65537); };
-        w.eval = micro_rotate_eval;
-        w.gen_keys = [](CC cc, const KeyPair<DCRTPoly>& kp) {
-            cc->EvalAtIndexKeyGen(kp.secretKey, {1});
-        };
-        g_registry["micro_rotate"] = std::move(w);
-    }
-    {
-        Workload w;
-        w.make_context = []() { return make_bgv_context(2, 64, 65537); };
-        w.eval = small_eval;
-        w.gen_keys = [](CC cc, const KeyPair<DCRTPoly>& kp) {
-            std::vector<int32_t> indices;
-            for (int i = 1; i < 64; i *= 2) indices.push_back(i);
-            cc->EvalAtIndexKeyGen(kp.secretKey, indices);
-        };
-        g_registry["small"] = std::move(w);
-    }
-}
 
 // ── BufReader / BufWriter (same wire format as Prototype A) ───────────────────
 
@@ -294,8 +171,6 @@ const std::vector<WorkloadSpec> kWorkloads = {
     {"small",        2, 64, 42, 123},
 };
 
-}  // namespace
-
 // ── main ──────────────────────────────────────────────────────────────────────
 
 int main(int argc, char** argv) {
@@ -330,8 +205,9 @@ int main(int argc, char** argv) {
     }
 
     try {
-        register_all_workloads();
-        auto& registry = get_workload_registry();
+        // Workloads are self-registered via static init in workload .cpp files.
+        // The shared registry is already populated by the time main() runs.
+        const auto& registry = get_workload_registry();
         auto it = registry.find(workload_id);
         if (it == registry.end()) {
             std::cerr << "[client] unknown workload: " << workload_id << std::endl;

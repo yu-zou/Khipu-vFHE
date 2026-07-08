@@ -4,9 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <functional>
 #include <iostream>
-#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -16,6 +14,7 @@
 #include "common/attestation.h"
 #include "common/serialization.h"
 #include "common/tcp_transport.h"
+#include "server/workload_registry.h"
 #include "openfhe.h"
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
@@ -29,15 +28,6 @@ namespace {
 
 using CT = lbcrypto::Ciphertext<lbcrypto::DCRTPoly>;
 using CC = lbcrypto::CryptoContext<lbcrypto::DCRTPoly>;
-
-// ── Inline workload struct and registry ───────────────────────────────────────
-
-struct Workload {
-    std::function<CC()> make_context;
-    std::function<CT(CC, const std::vector<CT>&)> eval;
-};
-
-using WorkloadRegistry = std::map<std::string, Workload>;
 
 // ── Reader for the big-endian length-prefixed REQUEST payload ─────────────────
 
@@ -126,31 +116,6 @@ std::vector<uint8_t> build_error_response(const std::string& msg) {
     return w.data();
 }
 
-// ── Noop workload (inline) ────────────────────────────────────────────────────
-
-CC make_noop_context() {
-    lbcrypto::CCParams<lbcrypto::CryptoContextBGVRNS> params;
-    params.SetMultiplicativeDepth(2);
-    params.SetPlaintextModulus(65537);
-    params.SetBatchSize(64);
-    params.SetSecurityLevel(lbcrypto::HEStd_128_classic);
-    params.SetScalingTechnique(lbcrypto::FIXEDMANUAL);
-    params.SetKeySwitchTechnique(lbcrypto::BV);
-    auto cc = lbcrypto::GenCryptoContext(params);
-    cc->Enable(lbcrypto::PKE);
-    cc->Enable(lbcrypto::KEYSWITCH);
-    cc->Enable(lbcrypto::LEVELEDSHE);
-    cc->Enable(lbcrypto::ADVANCEDSHE);
-    return cc;
-}
-
-CT noop_eval(CC /*cc*/, const std::vector<CT>& inputs) {
-    if (inputs.empty()) {
-        throw std::runtime_error("noop workload requires at least one input ciphertext");
-    }
-    return inputs[0];
-}
-
 // ── Client handler ────────────────────────────────────────────────────────────
 
 void handle_client(int client_fd) {
@@ -194,15 +159,8 @@ void handle_client(int client_fd) {
         return;
     }
 
-    // ── Inline workload registry lookup ────────────────────────────────────────
-    WorkloadRegistry registry;
-    {
-        Workload w;
-        w.make_context = make_noop_context;
-        w.eval = noop_eval;
-        registry["noop"] = std::move(w);
-    }
-
+    // ── Workload registry lookup ────────────────────────────────────────────────
+    const auto& registry = get_workload_registry();
     auto it = registry.find(workload_id);
     if (it == registry.end()) {
         std::cerr << "[server] unknown workload: " << workload_id << std::endl;
