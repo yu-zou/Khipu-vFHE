@@ -5,6 +5,8 @@
 # Build artifacts
 tee-vfhe/build/
 tee-vfhe/Testing/
+tee-vfhe-bgvrns/build/
+tee-vfhe-bgvrns/Testing/
 
 # Test artifacts
 quote.dat
