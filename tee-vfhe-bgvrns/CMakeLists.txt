@@ -215,5 +215,4 @@ target_link_libraries(benchmark_runner PRIVATE
 )
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
-# Tests will be added via add_subdirectory(tests) once tests/CMakeLists.txt is
-# created in a later task. For now, enable_testing() above is sufficient.
+add_subdirectory(tests)
