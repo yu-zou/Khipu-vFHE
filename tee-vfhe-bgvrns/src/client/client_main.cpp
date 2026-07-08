@@ -171,6 +171,7 @@ const std::vector<WorkloadSpec> kWorkloads = {
     {"small",        2, 64, 42, 123},
     {"medium",       1, 64, 42, 0},
     {"micro_modswitch", 1, 64, 42, 0},
+    {"app_matvec",   1, 64, 42, 0},
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
