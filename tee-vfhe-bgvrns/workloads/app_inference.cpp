@@ -2,7 +2,7 @@
 // layer1: z1 = W1 * x + b1  (32 -> 16), activation: z2 = z1^2
 // layer2: y  = W2 * z2 + b2  (16 -> 10)
 // One input ciphertext encoding x (32 values, padded to batch 64).
-// BGV params: multiplicativeDepth=2, plaintextModulus=65537, batchSize=64,
+// BGV params: multiplicativeDepth=5, plaintextModulus=65537, batchSize=64,
 // FIXEDMANUAL, BV key switching.
 // Uses power-of-two rotation keys {±1,±2,±4,±8,±16} with composed rotations.
 // Self-registers into the global WorkloadRegistry at static init time.
@@ -77,7 +77,7 @@ tee::CT diag_matvec(tee::CC cc, const tee::CT& x,
 
 tee::CC make_app_inference_context() {
     CCParams<CryptoContextBGVRNS> p;
-    p.SetMultiplicativeDepth(2); p.SetPlaintextModulus(kMod); p.SetBatchSize(64);
+    p.SetMultiplicativeDepth(5); p.SetPlaintextModulus(kMod); p.SetBatchSize(64);
     p.SetSecurityLevel(HEStd_128_classic); p.SetKeySwitchTechnique(BV);
     p.SetDigitSize(4); p.SetScalingTechnique(FIXEDMANUAL); p.SetFirstModSize(60);
     auto cc=GenCryptoContext(p);
