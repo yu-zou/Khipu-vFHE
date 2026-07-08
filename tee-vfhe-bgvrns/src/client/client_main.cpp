@@ -170,6 +170,7 @@ const std::vector<WorkloadSpec> kWorkloads = {
     {"micro_rotate", 1, 64, 42, 0},
     {"small",        2, 64, 42, 123},
     {"medium",       1, 64, 42, 0},
+    {"micro_modswitch", 1, 64, 42, 0},
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
