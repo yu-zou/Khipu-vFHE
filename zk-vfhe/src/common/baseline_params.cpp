@@ -10,9 +10,18 @@ CryptoContext<DCRTPoly> make_baseline_bgvrns_context() {
     params.SetScalingTechnique(FIXEDMANUAL);
     params.SetSecurityLevel(HEStd_NotSet);
     params.SetRingDim(8192);
+    // zkOpenFHE's LibsnarkProofSystem::RelinearizeConstraint / KeySwitchConstraint
+    // internally call KeySwitchBV().EvalKeySwitchPrecomputeCore, which requires
+    // BV key switching. HYBRID key switching segfaults inside the proofsystem at
+    // depth>=2 (the KeySwitchBV call fails on a HYBRID-shaped eval key).
+    // BV is also what Prototype E uses, keeping the key-switch technique aligned
+    // across B and E.
     params.SetKeySwitchTechnique(BV);
-    params.SetDigitSize(4);
-    params.SetFirstModSize(60);
+    // Do NOT set FirstModSize explicitly. An unbalanced modulus chain (60-bit
+    // first modulus + ~17-bit scaling modulus for plaintextModulus=65537)
+    // triggers `assert(oldModulusByHalf > diff)` inside
+    // LibsnarkProofSystem::SwitchModulusConstraint during Relinearize/KeySwitch
+    // constraint generation. The library default firstModSize avoids this.
     auto cc = GenCryptoContext(params);
     cc->Enable(PKE);
     cc->Enable(KEYSWITCH);
