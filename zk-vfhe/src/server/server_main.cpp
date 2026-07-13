@@ -1,21 +1,18 @@
 // zk-vfhe server: ZK-proof-based verifiable FHE server.
 //
-// Current state:
-//  * Single-pass FHE evaluation per request (like Prototype E), producing
-//    correct BGV outputs and timing data. The three-pass ZK constraint/
-//    witness/proof pipeline is NOT wired because zkOpenFHE v1.0.4's
-//    ProofSystem does not instrument several BGV operations our workloads
-//    need (ct-pt EvalMult, ModReduce, EvalSum, the auto-relinearising
-//    EvalMult, ...).  Until that is addressed, the server returns empty
-//    proof / public-input / VK blobs so benchmark data can be collected.
-//  * Wire format: 5 blobs - [output_ct][transcript_json][proof_bytes]
-//                         [public_inputs_bytes][vk_bytes] - matching the
-//    benchmark_runner expectations.  proof/public_inputs/vk are empty.
+// Per-request pipeline:
+//  1. Plain FHE evaluation to produce the output ciphertext (needed for the
+//     transcript's output_ct_hash and for the client's result).
+//  2. Three-pass ZK pipeline (constraint → witness → Groth16 proof) using
+//     zkOpenFHE's LibsnarkProofSystem wrapper, followed by libsnark proving.
+//  3. Serialize output_ct, transcript JSON, proof_bytes, public_inputs_bytes,
+//     and verification_key_bytes into a 5-blob response.
 //
 // Startup: registers workloads, writes per-workload dummy VK files for the
 //          client's pre-load check, listens for TCP requests.
 
 #include <arpa/inet.h>
+#include <malloc.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -36,11 +33,14 @@
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
 #include "openfhe/pke/scheme/bgvrns/bgvrns-ser.h"
+#include "libff/common/profiling.hpp"
+#include "proofsystem/proofsystem_libsnark.h"
 
 #include "common/hashing.h"
 #include "common/serialization.h"
 #include "common/tcp_transport.h"
 #include "common/transcript.h"
+#include "common/zk_proof.h"
 #include "server/workload_registry.h"
 
 using namespace zk;
@@ -230,6 +230,122 @@ void handle_client(int client_fd) {
     }
     auto t_eval1 = clock::now();
 
+    // ── Three-pass ZK proof generation (constraint → witness → proof) ──────
+    std::vector<uint8_t> proof_bytes, pi_bytes, vk_bytes;
+    uint64_t witness_us = 0, proof_us = 0;
+
+    if (w.eval_zk) {
+        auto log_phase = [](const char* phase, clock::time_point t0) {
+            std::cerr << "[server]   zk-phase=" << phase << "  "
+                      << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - t0).count()
+                      << "ms" << std::endl;
+        };
+        try {
+            std::cerr << "[server] zk start workload=" << workload_id << std::endl;
+
+            std::vector<CT> zk_inputs;
+            zk_inputs.reserve(input_ct_blobs.size());
+            for (auto& cb : input_ct_blobs) {
+                std::string s(cb.begin(), cb.end());
+                zk_inputs.push_back(deserialize_ciphertext(s));
+            }
+
+            // Pass 1: constraint generation (builds R1CS, no actual computation).
+            auto t_p1 = clock::now();
+            LibsnarkProofSystem ps(cc);
+            ps.SetMode(PROOFSYSTEM_MODE_CONSTRAINT_GENERATION);
+            std::cerr << "[server]   zk pass1 mode=set constraint_gen" << std::endl;
+            {
+                CT zk_out_c = w.eval_zk(ps, zk_inputs);
+                (void)zk_out_c;
+            }
+            log_phase("pass1_constraint_gen", t_p1);
+
+            // Pass 2: witness generation.
+            zk_inputs.clear();
+            for (auto& cb : input_ct_blobs) {
+                std::string s(cb.begin(), cb.end());
+                zk_inputs.push_back(deserialize_ciphertext(s));
+            }
+            auto t_p2 = clock::now();
+            ps.SetMode(PROOFSYSTEM_MODE_WITNESS_GENERATION);
+            std::cerr << "[server]   zk pass2 mode=set witness_gen" << std::endl;
+            {
+                CT zk_out_w = w.eval_zk(ps, zk_inputs);
+                (void)zk_out_w;
+            }
+            log_phase("pass2_witness_gen", t_p2);
+
+            auto t_witness_end = clock::now();
+            witness_us = (uint64_t)std::chrono::duration_cast<us>(t_witness_end - t_eval1).count();
+
+            // Extract constraint system and witness values.
+            auto t_extract = clock::now();
+            auto cs = ps.pb.get_constraint_system();
+            auto primary_input = ps.pb.primary_input();
+            auto auxiliary_input = ps.pb.auxiliary_input();
+            std::cerr << "[server]   zk extract  constraints=" << cs.num_constraints()
+                      << "  primary=" << primary_input.size()
+                      << "  aux=" << auxiliary_input.size() << std::endl;
+            log_phase("extract_cs", t_extract);
+
+            if (cs.num_constraints() == 0) {
+                // EvalAdd-only workloads produce no R1CS constraints (addition
+                // is linear, captured in the witness not as A*B=C constraints).
+                // Skip the ZK pipeline gracefully - there is nothing to prove.
+                std::cerr << "[server]   zk skip: constraint system is empty "
+                          << "(linear workload, no multiplication to prove)"
+                          << std::endl;
+            } else {
+                if (!cs.is_satisfied(primary_input, auxiliary_input)) {
+                    throw std::runtime_error("constraint system not satisfied by witness");
+                }
+                std::cerr << "[server]   zk cs satisfied" << std::endl;
+
+                // Pass 3: key setup + Groth16/PGHR13 proof generation.
+                auto t_setup = clock::now();
+                auto zk_vk = zk::setup(cs);
+                log_phase("pass3a_setup", t_setup);
+
+                auto t_proof_start = clock::now();
+                auto zk_proof = zk::prove(primary_input, auxiliary_input);
+                auto t_proof_end = clock::now();
+                log_phase("pass3b_prove", t_proof_start);
+                proof_us = (uint64_t)std::chrono::duration_cast<us>(t_proof_end - t_proof_start).count();
+
+                // Serialize proof artifacts.
+                proof_bytes = zk::serialize_proof(zk_proof);
+                pi_bytes = zk::serialize_public_inputs(primary_input);
+                vk_bytes = zk::serialize_vk(zk_vk);
+
+                std::cerr << "[server] ZK ok: constraints=" << cs.num_constraints()
+                          << "  primary_inputs=" << primary_input.size()
+                          << "  aux_inputs=" << auxiliary_input.size()
+                          << "  proof_bytes=" << proof_bytes.size()
+                          << "  vk_bytes=" << vk_bytes.size() << std::endl;
+
+                // Release the cached proving key (can be hundreds of MB for large
+                // constraint systems) so subsequent workloads don't trigger OOM.
+                zk::clear_cached_keypair();
+                // Return freed heap to the OS. Without this, glibc retains the
+                // freed pages in its arena and the next r1cs_ppzksnark_generator
+                // call (which allocates a fresh, larger key) pushes us over the
+                // system memory limit.
+                malloc_trim(0);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[server] ZK proof generation FAILED for workload=" << workload_id
+                      << ": " << e.what() << std::endl
+                      << "[server]   (proof blobs will be empty; witness_us/proof_us zeroed)"
+                      << std::endl;
+            proof_bytes.clear();
+            pi_bytes.clear();
+            vk_bytes.clear();
+            witness_us = 0;
+            proof_us = 0;
+        }
+    }
+
     std::string out_str;
     try { out_str = serialize_ciphertext(out); }
     catch (const std::exception& e) {
@@ -242,8 +358,8 @@ void handle_client(int client_fd) {
     auto t_tr0 = clock::now();
     Transcript tr = build_transcript(nonce, eval_key_blobs, input_ct_blobs, out_bytes);
     tr.fhe_eval_us       = (uint64_t)std::chrono::duration_cast<us>(t_eval1-t_eval0).count();
-    tr.witness_us        = 0;
-    tr.proof_us          = 0;
+    tr.witness_us        = witness_us;
+    tr.proof_us          = proof_us;
     tr.input_loading_us  = (uint64_t)std::chrono::duration_cast<us>(t_load1-t_load0).count();
     tr.peak_mem_kb       = 0;
     auto t_tr1 = clock::now();
@@ -252,14 +368,13 @@ void handle_client(int client_fd) {
     tr.peak_mem_kb = (uint64_t)ru.ru_maxrss;
 
     std::string tr_json = tr.to_json();
-    std::vector<uint8_t> empty;
 
     BufWriter bw;
     bw.write_blob(out_bytes);
     bw.write_string(tr_json);
-    bw.write_blob(empty);
-    bw.write_blob(empty);
-    bw.write_blob(empty);
+    bw.write_blob(proof_bytes);
+    bw.write_blob(pi_bytes);
+    bw.write_blob(vk_bytes);
 
     try { send_message(client_fd, bw.data()); }
     catch (const std::exception& e) { std::cerr << "[server] send failed: " << e.what() << std::endl; }
@@ -270,6 +385,10 @@ void handle_client(int client_fd) {
               << "  ctx=" << std::chrono::duration_cast<ms>(t_cc1-t_cc0).count()<<"ms"
               << "  load=" << std::chrono::duration_cast<ms>(t_load1-t_load0).count()<<"ms"
               << "  eval=" << std::chrono::duration_cast<ms>(t_eval1-t_eval0).count()<<"ms"
+              << "  witness=" << std::chrono::duration_cast<ms>(
+                    std::chrono::microseconds(witness_us)).count()<<"ms"
+              << "  proof=" << std::chrono::duration_cast<ms>(
+                    std::chrono::microseconds(proof_us)).count()<<"ms"
               << "  mem_kb=" << tr.peak_mem_kb << std::endl;
     (void)t_pack1;
 }
@@ -293,6 +412,11 @@ int main(int argc, char** argv) {
     auto& registry = get_workload_registry();
     std::cerr << "[server] registered " << registry.size() << " workloads" << std::endl;
     for (auto& [wid, _w] : registry) write_dummy_vk_file(wid);
+
+    // Suppress libff's verbose profiling prints (enter/leave for every pairing
+    // call). They go to stdout and would corrupt the benchmark CSV if the
+    // server's stdout were redirected there. Profiling counters stay active.
+    libff::inhibit_profiling_info = true;
 
     std::cerr << "[server] listening on 0.0.0.0:" << port << std::endl;
     TCPServer srv("0.0.0.0", port);
