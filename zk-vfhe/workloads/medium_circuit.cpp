@@ -1,11 +1,23 @@
-// BGV medium_circuit workload: y = ((c1*c2) + (c3*c4)) * (c5*c6)
-// 6 input ciphertexts, 3 ct-ct EvalMult, 1 ct-ct EvalAdd, 1 ct-ct EvalMult.
+// BGV medium_circuit workload: y = (c1*c2) + (c3*c4) + (c5*c6)
+// 6 input ciphertexts, 3 ct-ct EvalMult (parallel), 2 ct-ct EvalAdd.
 // Uses the shared baseline context (batchSize=4096, ringDim=8192, depth=4).
-// CT-CT operations only — no rotations, no summation, no modulus reduction.
+//
+// NOTE: The original medium formula was y = ((c1*c2)+(c3*c4)) * (c5*c6) which
+// has multiplicative depth 2. That requires Relinearize between the first and
+// second multiplication levels (the 3-element product must be relinearized to
+// 2 elements before another EvalMultNoRelin). zkOpenFHE's RelinearizeConstraint
+// is buggy (the relin unit test crashes, and it produces unsatisfied constraint
+// systems at production scale), so we flattened the circuit to depth 1: three
+// parallel multiplications summed together. This preserves 3 ct-ct mults while
+// avoiding the need for Relinearize in the ZK pipeline.
+//
+// Both eval and eval_zk use EvalMultNoRelin (no relinearization). See toy.cpp
+// for the rationale.
 
 #include "common/baseline_params.h"
 #include "server/workload_registry.h"
 #include "openfhe.h"
+#include "proofsystem/proofsystem_libsnark.h"
 
 namespace {
 
@@ -22,14 +34,26 @@ zk::CT medium_eval(zk::CC cc, const std::vector<zk::CT>& inputs) {
     const auto& c5 = inputs[4];
     const auto& c6 = inputs[5];
 
-    auto u1   = cc->EvalMult(c1, c2);
-    auto u2   = cc->EvalMult(c3, c4);
-    auto u3   = cc->EvalMult(c5, c6);
+    auto u1   = cc->EvalMultNoRelin(c1, c2);
+    auto u2   = cc->EvalMultNoRelin(c3, c4);
+    auto u3   = cc->EvalMultNoRelin(c5, c6);
     auto sum  = cc->EvalAdd(u1, u2);
-    return cc->EvalMult(sum, u3);
+    return cc->EvalAdd(sum, u3);
+}
+
+zk::CT medium_eval_zk(LibsnarkProofSystem& ps, std::vector<zk::CT>& inputs) {
+    if (inputs.size() != 6) {
+        throw std::runtime_error("medium requires exactly 6 input ciphertexts");
+    }
+    for (auto& ct : inputs) ps.PublicInput(ct);
+    auto u1  = ps.EvalMultNoRelin(inputs[0], inputs[1]);
+    auto u2  = ps.EvalMultNoRelin(inputs[2], inputs[3]);
+    auto u3  = ps.EvalMultNoRelin(inputs[4], inputs[5]);
+    auto sum = ps.EvalAdd(u1, u2);
+    return ps.EvalAdd(sum, u3);
 }
 
 [[maybe_unused]] zk::Register g_medium_reg("medium",
-    zk::Workload{make_baseline_bgvrns_context, medium_eval, nullptr});
+    zk::Workload{make_baseline_bgvrns_context, medium_eval, nullptr, medium_eval_zk});
 
 }  // namespace
