@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "client/verifier.h"
 #include "common/attestation.h"
 #include "common/hashing.h"
@@ -41,18 +43,15 @@ struct WorkloadSpec {
 };
 
 // Deterministic input-generation metadata. Matches client_main.cpp kWorkloads.
-// All BGV workloads use 64 slots; seeds 42 (input A) / 123 (input B).
+// Standard workloads use 64 slots; E workloads use 4096 slots (batchSize=4096,
+// ringDim=8192) via the shared baseline context.
 const std::vector<WorkloadSpec> kWorkloads = {
-    {"noop",            1, 64, 42, 0},
-    {"toy",             2, 64, 42, 123},
-    {"small",           2, 64, 42, 123},
-    {"medium",          1, 64, 42, 0},
-    {"micro_add",       2, 64, 42, 123},
-    {"micro_mul",       2, 64, 42, 123},
-    {"micro_modswitch", 1, 64, 42, 0},
-    {"micro_rotate",    1, 64, 42, 0},
-    {"app_matvec",      1, 64, 42, 0},
-    {"app_inference",   1, 64, 42, 0},
+    {"noop",            1, 64,   42,   0},
+    {"toy",             2, 64,   42, 123},
+    {"small",           4, 64,   42, 123},
+    {"medium",          6, 64,   42, 123},
+    {"BGV-Add-4K",      2, 4096, 42, 123},
+    {"BGV-Mul-4K",      2, 4096, 42, 123},
 };
 
 // ── Wire-format helpers (same framing as Prototype A / BGV client) ─────────────
@@ -139,26 +138,29 @@ std::vector<int64_t> gen_input_vec(int slots, int seed) {
 }
 
 std::vector<std::vector<uint8_t>> serialize_all_eval_keys(const CC& cc) {
-    std::vector<std::vector<uint8_t>> blobs;
+    // Always emit 3 blobs in order: [EvalMultKey, EvalSumKey, EvalAutomorphismKey].
+    // Empty blobs are sent as zero-length vectors so the server can unambiguously
+    // deserialize by index.
+    std::vector<std::vector<uint8_t>> blobs(3);
     {
         std::ostringstream oss(std::ios::binary);
         if (CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(oss, SerType::BINARY, cc)) {
             std::string s = oss.str();
-            if (!s.empty()) blobs.emplace_back(s.begin(), s.end());
+            blobs[0] = std::vector<uint8_t>(s.begin(), s.end());
         }
     }
     {
         std::ostringstream oss(std::ios::binary);
         if (CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(oss, SerType::BINARY, cc)) {
             std::string s = oss.str();
-            if (!s.empty()) blobs.emplace_back(s.begin(), s.end());
+            blobs[1] = std::vector<uint8_t>(s.begin(), s.end());
         }
     }
     {
         std::ostringstream oss(std::ios::binary);
         if (CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(oss, SerType::BINARY, cc)) {
             std::string s = oss.str();
-            if (!s.empty()) blobs.emplace_back(s.begin(), s.end());
+            blobs[2] = std::vector<uint8_t>(s.begin(), s.end());
         }
     }
     return blobs;
@@ -205,8 +207,8 @@ int main(int argc, char** argv) {
     const auto& registry = get_workload_registry();
 
     // CSV header + rows go to stdout; everything else to stderr.
-    std::cout << "workload,fhe_eval_us,transcript_us,quote_us,verify_us,e2e_us,"
-                 "peak_mem_kb,transcript_bytes,quote_bytes\n";
+    std::cout << "workload,input_loading_us,fhe_eval_us,transcript_us,quote_us,"
+                 "packaging_us,verify_us,e2e_us,peak_mem_kb,transcript_bytes,quote_bytes\n";
 
     bool all_ok = true;
     for (const auto& spec : kWorkloads) {
@@ -242,18 +244,13 @@ int main(int argc, char** argv) {
 
             // Encrypt deterministic BGV inputs.
             std::vector<std::vector<uint8_t>> input_ct_blobs;
-            auto vals_a = gen_input_vec(spec.slots, spec.seed_a);
-            auto pt_a = cc->MakePackedPlaintext(vals_a);
-            auto ct_a = cc->Encrypt(kp.publicKey, pt_a);
-            std::string s_a = serialize_ciphertext(ct_a);
-            input_ct_blobs.emplace_back(s_a.begin(), s_a.end());
-
-            if (spec.num_inputs >= 2) {
-                auto vals_b = gen_input_vec(spec.slots, spec.seed_b);
-                auto pt_b = cc->MakePackedPlaintext(vals_b);
-                auto ct_b = cc->Encrypt(kp.publicKey, pt_b);
-                std::string s_b = serialize_ciphertext(ct_b);
-                input_ct_blobs.emplace_back(s_b.begin(), s_b.end());
+            for (int i = 0; i < spec.num_inputs; ++i) {
+                int seed = spec.seed_a + i * spec.seed_b;
+                auto vals = gen_input_vec(spec.slots, seed);
+                auto pt = cc->MakePackedPlaintext(vals);
+                auto ct = cc->Encrypt(kp.publicKey, pt);
+                std::string s = serialize_ciphertext(ct);
+                input_ct_blobs.emplace_back(s.begin(), s.end());
             }
 
             // Build request: nonce, eval-key count + blobs, input-ct count +
@@ -322,7 +319,6 @@ int main(int argc, char** argv) {
                           << std::endl;
             }
 
-            long peak_mem = get_peak_mem_kb();
             uint64_t e2e_us = static_cast<uint64_t>(
                 std::chrono::duration_cast<std::chrono::microseconds>(
                     t_e2e_end - t_e2e_start).count());
@@ -330,13 +326,21 @@ int main(int argc, char** argv) {
                 std::chrono::duration_cast<std::chrono::microseconds>(
                     t_verify_end - t_verify_start).count());
 
+            // Extract additional metrics from transcript JSON.
+            nlohmann::json tj = nlohmann::json::parse(transcript_json);
+            uint64_t input_loading_us = tj.value("input_loading_us", 0ULL);
+            uint64_t packaging_us = tj.value("packaging_us", 0ULL);
+            uint64_t json_peak_mem_kb = tj.value("peak_mem_kb", 0ULL);
+
             std::cout << spec.id << ","
+                      << input_loading_us << ","
                       << transcript.fhe_eval_us << ","
                       << transcript.transcript_us << ","
                       << transcript.quote_us << ","
+                      << packaging_us << ","
                       << verify_us << ","
                       << e2e_us << ","
-                      << peak_mem << ","
+                      << json_peak_mem_kb << ","
                       << transcript_json.size() << ","
                       << quote_bytes.size() << "\n";
 

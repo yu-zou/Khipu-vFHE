@@ -163,16 +163,12 @@ struct WorkloadSpec {
 };
 
 const std::vector<WorkloadSpec> kWorkloads = {
-    {"noop",         1, 64, 42, 0},
-    {"toy",          2, 64, 42, 123},
-    {"micro_add",    2, 64, 42, 123},
-    {"micro_mul",    2, 64, 42, 123},
-    {"micro_rotate", 1, 64, 42, 0},
-    {"small",        2, 64, 42, 123},
-    {"medium",       1, 64, 42, 0},
-    {"micro_modswitch", 1, 64, 42, 0},
-    {"app_matvec",   1, 64, 42, 0},
-    {"app_inference", 1, 64, 42, 0},
+    {"noop",              1, 64,   42, 0},
+    {"toy",               2, 64,   42, 123},
+    {"small",             4, 64,   42, 123},
+    {"medium",            6, 64,   42, 123},
+    {"BGV-Add-4K",        2, 4096, 42, 123},
+    {"BGV-Mul-4K",        2, 4096, 42, 123},
 };
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -245,20 +241,14 @@ int main(int argc, char** argv) {
 
         if (spec != nullptr) {
             // BGV: use MakePackedPlaintext with int64_t vector.
-            auto vals_a = gen_input_vec(spec->slots, spec->seed_a);
-            auto pt_a = cc->MakePackedPlaintext(vals_a);
-            auto ct_a = cc->Encrypt(kp.publicKey, pt_a);
-            input_cts.push_back(ct_a);
-            std::string s_a = serialize_ciphertext(ct_a);
-            input_ct_blobs.emplace_back(s_a.begin(), s_a.end());
-
-            if (spec->num_inputs >= 2) {
-                auto vals_b = gen_input_vec(spec->slots, spec->seed_b);
-                auto pt_b = cc->MakePackedPlaintext(vals_b);
-                auto ct_b = cc->Encrypt(kp.publicKey, pt_b);
-                input_cts.push_back(ct_b);
-                std::string s_b = serialize_ciphertext(ct_b);
-                input_ct_blobs.emplace_back(s_b.begin(), s_b.end());
+            for (int i = 0; i < spec->num_inputs; ++i) {
+                int seed = spec->seed_a + i * spec->seed_b;
+                auto vals = gen_input_vec(spec->slots, seed);
+                auto pt = cc->MakePackedPlaintext(vals);
+                auto ct = cc->Encrypt(kp.publicKey, pt);
+                input_cts.push_back(ct);
+                std::string s = serialize_ciphertext(ct);
+                input_ct_blobs.emplace_back(s.begin(), s.end());
             }
         } else {
             std::cerr << "[client] warning: input generation for workload '"
