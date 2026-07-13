@@ -43,10 +43,12 @@ gtest_discover_tests(test_transcript)
 add_executable(test_workloads test_workloads.cpp)
 target_link_libraries(test_workloads PRIVATE
     -Wl,--whole-archive zk_workloads -Wl,--no-whole-archive
+    zk_proof
     zk_common
     OPENFHEpke
     OPENFHEcore
     OPENFHEbinfhe
+    ${SNARK_LIBRARY}
     ${FF_LIBRARY}
     ${GMP_LIBRARY}
     ${GMPXX_LIBRARY}

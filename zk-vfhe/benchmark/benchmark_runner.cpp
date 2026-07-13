@@ -29,6 +29,7 @@
 #include "common/tcp_transport.h"
 #include "common/transcript.h"
 #include "common/zk_proof.h"
+#include "libff/common/profiling.hpp"
 #include "openfhe.h"
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
@@ -155,6 +156,15 @@ void print_usage(const char* a0) {
 int main(int argc, char** argv) {
     std::string host = "127.0.0.1";
     uint16_t port = 8080;
+
+    // libff / libsnark require one-time init of curve parameters before any
+    // pairing / proof operation. Without this, deserialize_vk + verify_proof
+    // segfault inside libff's bn128 pairing code.
+    zk::pp::init_public_params();
+    // Suppress libff's per-phase profiling prints (they go to stdout and
+    // corrupt the CSV). Profiling counters remain active for any post-hoc
+    // analysis; only the verbose enter/leave messages are silenced.
+    libff::inhibit_profiling_info = true;
 
     for (int i=1; i<argc; i++) {
         std::string a = argv[i];
