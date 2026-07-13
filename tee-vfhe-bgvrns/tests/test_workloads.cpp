@@ -71,13 +71,13 @@ std::vector<int64_t> ref_small(const std::vector<std::vector<int64_t>>& in) {
 }
 
 std::vector<int64_t> ref_medium(const std::vector<std::vector<int64_t>>& in) {
-    // u1=c1*c2, u2=c3*c4, u3=c5*c6, y=(u1+u2)*u3
+    // y = (c1*c2) + (c3*c4) + (c5*c6) element-wise (depth-1, no relin needed)
     std::vector<int64_t> r(kBatchSize4K, 0);
     for (size_t i = 0; i < kBatchSize4K; ++i) {
         int64_t u1 = mod(in[0][i] * in[1][i]);
         int64_t u2 = mod(in[2][i] * in[3][i]);
         int64_t u3 = mod(in[4][i] * in[5][i]);
-        r[i] = mod(mod(u1 + u2) * u3);
+        r[i] = mod(mod(u1 + u2) + u3);
     }
     return r;
 }
