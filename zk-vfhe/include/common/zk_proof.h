@@ -4,8 +4,11 @@
 #include <cstdint>
 #include <vector>
 
-#include "libsnark/common/default_types/r1cs_gg_ppzksnark_pp.hpp"
-#include "libsnark/zk_proof_systems/ppzksnark/r1cs_gg_ppzksnark/r1cs_gg_ppzksnark.hpp"
+// zkOpenFHE's LibsnarkProofSystem builds its protoboard against
+// default_r1cs_ppzksnark_pp (PGHR13-style ppzkSNARK over alt_bn128), so all
+// constraint-system / proof types here must use the same curve parameters.
+#include "libsnark/common/default_types/r1cs_ppzksnark_pp.hpp"
+#include "libsnark/zk_proof_systems/ppzksnark/r1cs_ppzksnark/r1cs_ppzksnark.hpp"
 #include "libsnark/gadgetlib1/pb_variable.hpp"
 #include "libff/algebra/fields/field_utils.hpp"
 
@@ -14,15 +17,15 @@ class LibsnarkProofSystem;
 
 namespace zk {
 
-using pp = libsnark::default_r1cs_gg_ppzksnark_pp;
+using pp = libsnark::default_r1cs_ppzksnark_pp;
 using FieldT = libff::Fr<pp>;
-using Proof = libsnark::r1cs_gg_ppzksnark_proof<pp>;
-using VerificationKey = libsnark::r1cs_gg_ppzksnark_verification_key<pp>;
-using ProvingKey = libsnark::r1cs_gg_ppzksnark_proving_key<pp>;
-using Keypair = libsnark::r1cs_gg_ppzksnark_keypair<pp>;
-using ConstraintSystem = libsnark::r1cs_gg_ppzksnark_constraint_system<pp>;
-using PrimaryInput = libsnark::r1cs_gg_ppzksnark_primary_input<pp>;
-using AuxiliaryInput = libsnark::r1cs_gg_ppzksnark_auxiliary_input<pp>;
+using Proof = libsnark::r1cs_ppzksnark_proof<pp>;
+using VerificationKey = libsnark::r1cs_ppzksnark_verification_key<pp>;
+using ProvingKey = libsnark::r1cs_ppzksnark_proving_key<pp>;
+using Keypair = libsnark::r1cs_ppzksnark_keypair<pp>;
+using ConstraintSystem = libsnark::r1cs_ppzksnark_constraint_system<pp>;
+using PrimaryInput = libsnark::r1cs_ppzksnark_primary_input<pp>;
+using AuxiliaryInput = libsnark::r1cs_ppzksnark_auxiliary_input<pp>;
 
 struct ProofBundle {
     Proof proof;
@@ -34,9 +37,14 @@ void generate_constraints(LibsnarkProofSystem& ps);
 void generate_witness(LibsnarkProofSystem& ps);
 ProofBundle generate_proof(libsnark::protoboard<FieldT>& pb);
 
-// Cached keypair API: call setup() once per workload, prove() per request.
+// Cached keypair API: call setup() once per constraint system, prove() per request.
 VerificationKey setup(const ConstraintSystem& cs);
 Proof prove(const PrimaryInput& primary_input, const AuxiliaryInput& auxiliary_input);
+
+// Release the cached proving/verification key and return memory to the OS.
+// Call between unrelated proofs to prevent unbounded memory growth when
+// the server processes multiple workloads with different constraint systems.
+void clear_cached_keypair();
 
 bool verify_proof(const VerificationKey& vk,
                   const PrimaryInput& public_inputs,

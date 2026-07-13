@@ -16,9 +16,9 @@ using libsnark::protoboard;
 using libsnark::r1cs_constraint_system;
 using libsnark::r1cs_primary_input;
 using libsnark::r1cs_auxiliary_input;
-using libsnark::r1cs_gg_ppzksnark_generator;
-using libsnark::r1cs_gg_ppzksnark_prover;
-using libsnark::r1cs_gg_ppzksnark_verifier_strong_IC;
+using libsnark::r1cs_ppzksnark_generator;
+using libsnark::r1cs_ppzksnark_prover;
+using libsnark::r1cs_ppzksnark_verifier_strong_IC;
 
 namespace zk {
 
@@ -39,8 +39,8 @@ ProofBundle generate_proof(protoboard<FieldT>& pb) {
         throw std::runtime_error("Constraint system is not satisfied");
     }
 
-    auto keypair = r1cs_gg_ppzksnark_generator<pp>(cs);
-    Proof proof = r1cs_gg_ppzksnark_prover<pp>(
+    auto keypair = r1cs_ppzksnark_generator<pp>(cs);
+    Proof proof = r1cs_ppzksnark_prover<pp>(
         keypair.pk, primary_input, auxiliary_input);
 
     return ProofBundle{std::move(proof), std::move(primary_input),
@@ -56,7 +56,7 @@ namespace {
 }  // namespace
 
 VerificationKey setup(const ConstraintSystem& cs) {
-    auto keypair = r1cs_gg_ppzksnark_generator<pp>(cs);
+    auto keypair = r1cs_ppzksnark_generator<pp>(cs);
     g_cached_vk = std::move(keypair.vk);
     g_cached_pk = std::move(keypair.pk);
     g_keypair_valid = true;
@@ -68,14 +68,20 @@ Proof prove(const PrimaryInput& primary_input,
     if (!g_keypair_valid) {
         throw std::runtime_error("Keypair not set up. Call setup() first.");
     }
-    return r1cs_gg_ppzksnark_prover<pp>(
+    return r1cs_ppzksnark_prover<pp>(
         g_cached_pk, primary_input, auxiliary_input);
+}
+
+void clear_cached_keypair() {
+    g_cached_pk = ProvingKey();
+    g_cached_vk = VerificationKey();
+    g_keypair_valid = false;
 }
 
 bool verify_proof(const VerificationKey& vk,
                   const PrimaryInput& public_inputs,
                   const Proof& proof) {
-    return r1cs_gg_ppzksnark_verifier_strong_IC<pp>(
+    return r1cs_ppzksnark_verifier_strong_IC<pp>(
         vk, public_inputs, proof);
 }
 
@@ -128,7 +134,11 @@ std::vector<uint8_t> serialize_public_inputs(const PrimaryInput& inputs) {
     std::vector<uint8_t> result;
     uint32_t num_inputs = static_cast<uint32_t>(inputs.size());
 
-    result.resize(4 + num_inputs * 32);
+    // Each FieldT serializes to num_limbs * sizeof(mp_limb_t) bytes in
+    // BINARY_OUTPUT mode (defined in CMakeLists.txt). For bn128 Fr,
+    // num_limbs=4, sizeof(mp_limb_t)=8 -> 32 bytes per element.
+    constexpr size_t elem_bytes = FieldT::num_limbs * sizeof(mp_limb_t);
+    result.resize(4 + num_inputs * elem_bytes);
     result[0] = static_cast<uint8_t>((num_inputs >> 0) & 0xFF);
     result[1] = static_cast<uint8_t>((num_inputs >> 8) & 0xFF);
     result[2] = static_cast<uint8_t>((num_inputs >> 16) & 0xFF);
@@ -137,12 +147,14 @@ std::vector<uint8_t> serialize_public_inputs(const PrimaryInput& inputs) {
     size_t offset = 4;
     for (const auto& field_elem : inputs) {
         libff::bigint<FieldT::num_limbs> b = field_elem.as_bigint();
-        // bigint uses stream operator<< for binary serialization (BINARY_OUTPUT mode)
         std::ostringstream oss(std::ios::binary);
         oss << b;
-        std::string elem_bytes = oss.str();
-        std::memcpy(result.data() + offset, elem_bytes.data(), 32);
-        offset += 32;
+        std::string elem_str = oss.str();
+        // BINARY_OUTPUT mode writes exactly elem_bytes; fall back gracefully
+        // if (incorrectly) compiled without it.
+        size_t copy_n = std::min<size_t>(elem_str.size(), elem_bytes);
+        std::memcpy(result.data() + offset, elem_str.data(), copy_n);
+        offset += elem_bytes;
     }
 
     return result;
@@ -158,7 +170,8 @@ PrimaryInput deserialize_public_inputs(const std::vector<uint8_t>& bytes) {
                         | (static_cast<uint32_t>(bytes[2]) << 16)
                         | (static_cast<uint32_t>(bytes[3]) << 24);
 
-    if (bytes.size() < 4 + static_cast<size_t>(num_inputs) * 32) {
+    constexpr size_t elem_bytes = FieldT::num_limbs * sizeof(mp_limb_t);
+    if (bytes.size() < 4 + static_cast<size_t>(num_inputs) * elem_bytes) {
         throw std::runtime_error("Invalid public inputs: size mismatch");
     }
 
@@ -168,11 +181,11 @@ PrimaryInput deserialize_public_inputs(const std::vector<uint8_t>& bytes) {
     size_t offset = 4;
     for (uint32_t i = 0; i < num_inputs; ++i) {
         libff::bigint<FieldT::num_limbs> b;
-        std::string s(reinterpret_cast<const char*>(bytes.data() + offset), 32);
+        std::string s(reinterpret_cast<const char*>(bytes.data() + offset), elem_bytes);
         std::istringstream iss(s, std::ios::binary);
         iss >> b;
         inputs.emplace_back(b);
-        offset += 32;
+        offset += elem_bytes;
     }
 
     return inputs;
