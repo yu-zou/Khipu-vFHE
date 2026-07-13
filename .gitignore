@@ -15,3 +15,13 @@ report.dat
 # Large downloads / vendored source trees (installed to /usr/local)
 thirdparty/openfhe-development/
 thirdparty/openfhe-v1.5.1.tar.gz
+
+# zk-vfhe build artifacts
+zk-vfhe/build/
+zk-vfhe/Testing/
+
+# CMake cache
+CMakeFiles/
+
+# Test results
+test_results/
