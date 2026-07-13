@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(tee-vfhe-bgvrns VERSION 0.1.0 LANGUAGES CXX C ASM)
+project(zk-vfhe VERSION 0.1.0 LANGUAGES CXX C ASM)
 
 # ── C++ Standard ──────────────────────────────────────────────────────────────
 set(CMAKE_CXX_STANDARD 17)
@@ -9,7 +9,8 @@ enable_testing()
 
 # ── Dependencies ──────────────────────────────────────────────────────────────
 
-# OpenFHE (must be installed separately)
+# OpenFHE (must be installed separately; includes zkOpenFHE proofsystem headers
+# at /usr/local/include/openfhe/pke/proofsystem/)
 find_package(OpenFHE CONFIG REQUIRED)
 
 # Apply OpenFHE build flags (includes -march=native -fopenmp -DMATHBACKEND=4)
@@ -17,20 +18,26 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenFHE_CXX_FLAGS}")
 
 # OpenFHE imported targets do not carry include dirs; add them globally.
 # Consumer needs ${OpenFHE_INCLUDE} + {core,pke,binfhe} subdirs.
-# This project uses BGV serialization: scheme/bgvrns/bgvrns-ser.h (NOT CKKS).
+# zkOpenFHE proofsystem headers are at pke/proofsystem/ (added explicitly).
 include_directories(
   ${OpenFHE_INCLUDE}
   ${OpenFHE_INCLUDE}/core
   ${OpenFHE_INCLUDE}/pke
   ${OpenFHE_INCLUDE}/binfhe
+  ${OpenFHE_INCLUDE}/pke/proofsystem
 )
 
 link_directories(/usr/lib64)
 
-# GMP (required by OpenFHE for big-integer arithmetic).
-find_library(GMP_LIBRARY gmp REQUIRED)
-# libff (required by OpenFHE for curve operations).
+# libsnark (static library installed at /usr/local/lib/libsnark.a)
+# libff (libsnark depends on libff for curve operations, pairings, field arithmetic)
+# libzm (polynomial multiplication library used by libff)
+# GMP is required by libsnark for big-integer arithmetic.
+find_library(SNARK_LIBRARY snark PATHS /usr/local/lib REQUIRED)
 find_library(FF_LIBRARY ff PATHS /usr/local/lib REQUIRED)
+find_library(ZM_LIBRARY zm PATHS /tmp/zkOpenFHE/build/lib /usr/local/lib)
+find_library(GMP_LIBRARY gmp REQUIRED)
+find_library(GMPXX_LIBRARY gmpxx REQUIRED)
 
 # Google Test - prefer system package, fall back to FetchContent tarball.
 find_package(GTest QUIET)
@@ -67,24 +74,22 @@ target_include_directories(nlohmann_json INTERFACE
 
 # ── Library: Common types (hashing, transcript, serialization) ────────────────
 # Uses BGV serialization (scheme/bgvrns/bgvrns-ser.h), not CKKS.
-add_library(tee_common STATIC
+add_library(zk_common STATIC
   src/common/baseline_params.cpp
   src/common/hashing.cpp
   src/common/transcript.cpp
   src/common/serialization.cpp
 )
-target_include_directories(tee_common PUBLIC
+target_include_directories(zk_common PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(tee_common PUBLIC
+target_link_libraries(zk_common PUBLIC
   blake3
   nlohmann_json
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
-  ${GMP_LIBRARY}
-  ${FF_LIBRARY}
 )
 
 # ── Library: TCP transport layer ──────────────────────────────────────────────
@@ -96,45 +101,55 @@ target_include_directories(tcp_transport PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(tcp_transport PUBLIC
-  tee_common
+  zk_common
 )
 
-# ── Library: TDX attestation (server-side) ────────────────────────────────────
-add_library(tee_attestation STATIC
-  src/common/attestation.cpp
+# ── Library: zkOpenFHE proof system (server-side) ─────────────────────────────
+# Replaces TDX attestation with zkOpenFHE ZK proofs.
+# Uses libsnark for R1CS constraint system and proving.
+add_library(zk_proof STATIC
+  src/common/proof_generation.cpp
 )
-target_include_directories(tee_attestation PUBLIC
+target_include_directories(zk_proof PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
+  /tmp/zkOpenFHE/third-party/libsnark/depends/libfqfft
 )
-target_link_libraries(tee_attestation PUBLIC
-  tee_common
-  tdx_attest
+target_compile_definitions(zk_proof PUBLIC
+  CURVE_BN128
+)
+target_link_libraries(zk_proof PUBLIC
+  zk_common
+  ${SNARK_LIBRARY}
+  ${FF_LIBRARY}
+  ${ZM_LIBRARY}
+  ${GMP_LIBRARY}
 )
 
-# ── Library: Quote verifier (client-side) ─────────────────────────────────────
-add_library(tee_verifier STATIC
+# ── Library: ZK proof verifier (client-side) ──────────────────────────────────
+add_library(zk_verifier STATIC
   src/client/verifier.cpp
 )
-target_include_directories(tee_verifier PUBLIC
+target_include_directories(zk_verifier PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(tee_verifier PUBLIC
+target_link_libraries(zk_verifier PUBLIC
   tcp_transport
-  tee_attestation
+  zk_proof
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
-  curl
-  crypto
-  sgx_dcap_quoteverify
+  ${SNARK_LIBRARY}
+  ${FF_LIBRARY}
+  ${ZM_LIBRARY}
+  ${GMP_LIBRARY}
 )
 
 # ── Library: Server-side workload registry ────────────────────────────────────
 # Registration is inline in server_main.cpp per the plan; this library contains
 # only the workload implementation files.
-add_library(tee_workloads STATIC
+add_library(zk_workloads STATIC
   workloads/noop.cpp
   workloads/toy.cpp
   workloads/small_circuit.cpp
@@ -142,61 +157,65 @@ add_library(tee_workloads STATIC
   workloads/bgv_add_4k.cpp
   workloads/bgv_mul_4k.cpp
 )
-target_include_directories(tee_workloads PUBLIC
+target_include_directories(zk_workloads PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(tee_workloads PUBLIC
-  tee_common
+target_link_libraries(zk_workloads PUBLIC
+  zk_common
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
 )
 
-# ── Executable: TDX + FHE server ──────────────────────────────────────────────
-add_executable(tee_server
+# ── Executable: ZK + FHE server ───────────────────────────────────────────────
+add_executable(zk_server
   src/server/server_main.cpp
 )
-target_include_directories(tee_server PRIVATE
+target_include_directories(zk_server PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_link_libraries(tee_server PRIVATE
-  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
-  tee_attestation
+target_link_libraries(zk_server PRIVATE
+  -Wl,--whole-archive zk_workloads -Wl,--no-whole-archive
+  zk_proof
   tcp_transport
-  tee_common
+  zk_common
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
-  tdx_attest
+  ${SNARK_LIBRARY}
+  ${FF_LIBRARY}
+  ${ZM_LIBRARY}
+  ${GMPXX_LIBRARY}
+  ${GMP_LIBRARY}
   pthread
 )
 
 # ── Executable: Client ────────────────────────────────────────────────────────
-add_executable(tee_client
+add_executable(zk_client
   src/client/client_main.cpp
 )
-target_include_directories(tee_client PRIVATE
+target_include_directories(zk_client PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
-target_link_libraries(tee_client PRIVATE
-  tee_verifier
-  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
-  tee_attestation
+target_link_libraries(zk_client PRIVATE
+  zk_verifier
+  -Wl,--whole-archive zk_workloads -Wl,--no-whole-archive
+  zk_proof
   tcp_transport
-  tee_common
+  zk_common
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
-  tdx_attest
-  curl
-  crypto
+  ${SNARK_LIBRARY}
+  ${FF_LIBRARY}
+  ${ZM_LIBRARY}
+  ${GMPXX_LIBRARY}
+  ${GMP_LIBRARY}
   pthread
 )
 
 # ── Executable: Benchmark runner ──────────────────────────────────────────────
-# Defined in top-level CMakeLists.txt because benchmark/CMakeLists.txt does not
-# exist yet (will be split out in a later task).
 add_executable(benchmark_runner
   benchmark/benchmark_runner.cpp
 )
@@ -204,17 +223,19 @@ target_include_directories(benchmark_runner PRIVATE
   ${CMAKE_SOURCE_DIR}/include
 )
 target_link_libraries(benchmark_runner PRIVATE
-  tee_verifier
-  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
-  tee_attestation
+  zk_verifier
+  -Wl,--whole-archive zk_workloads -Wl,--no-whole-archive
+  zk_proof
   tcp_transport
-  tee_common
+  zk_common
   OPENFHEpke
   OPENFHEcore
   OPENFHEbinfhe
-  tdx_attest
-  curl
-  crypto
+  ${SNARK_LIBRARY}
+  ${FF_LIBRARY}
+  ${ZM_LIBRARY}
+  ${GMPXX_LIBRARY}
+  ${GMP_LIBRARY}
   pthread
 )
 

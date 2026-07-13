@@ -75,3 +75,4 @@ target_link_libraries(test_negative PRIVATE
     GTest::gtest_main
     pthread)
 gtest_discover_tests(test_negative)
+
