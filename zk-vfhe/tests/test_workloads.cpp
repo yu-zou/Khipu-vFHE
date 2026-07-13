@@ -7,18 +7,16 @@
 #include <random>
 #include <vector>
 
-using namespace tee;
+using namespace zk;
 using namespace lbcrypto;
 
 namespace {
 
 constexpr int64_t kModulus = 65537;
-constexpr size_t kBatchSize = 256;
-constexpr size_t kBatchSize4K = 4096;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-std::vector<int64_t> generate_input(unsigned seed, size_t batch_size = kBatchSize) {
+std::vector<int64_t> generate_input(unsigned seed, size_t batch_size) {
     std::mt19937 gen(seed);
     std::uniform_int_distribution<int64_t> dist(0, 65536);
     std::vector<int64_t> v(batch_size);
@@ -39,7 +37,7 @@ CT encrypt(CC cc, PublicKey<DCRTPoly> pk, const std::vector<int64_t>& vals) {
 }
 
 std::vector<int64_t> decrypt(CC cc, PrivateKey<DCRTPoly> sk, const CT& ct,
-                             size_t batch_size = kBatchSize) {
+                             size_t batch_size) {
     Plaintext pt;
     cc->Decrypt(sk, ct, &pt);
     pt->SetLength(batch_size);
@@ -56,24 +54,27 @@ std::vector<int64_t> ref_noop(const std::vector<std::vector<int64_t>>& in) {
 }
 
 std::vector<int64_t> ref_toy(const std::vector<std::vector<int64_t>>& in) {
-    std::vector<int64_t> r(kBatchSize);
-    for (size_t i = 0; i < kBatchSize; ++i)
+    size_t bs = in[0].size();
+    std::vector<int64_t> r(bs);
+    for (size_t i = 0; i < bs; ++i)
         r[i] = mod(in[0][i] * in[1][i]);
     return r;
 }
 
 std::vector<int64_t> ref_small(const std::vector<std::vector<int64_t>>& in) {
     // y = (c1*c2) + (c3*c4) element-wise
-    std::vector<int64_t> r(kBatchSize4K, 0);
-    for (size_t i = 0; i < kBatchSize4K; ++i)
+    size_t bs = in[0].size();
+    std::vector<int64_t> r(bs, 0);
+    for (size_t i = 0; i < bs; ++i)
         r[i] = mod(mod(in[0][i] * in[1][i]) + mod(in[2][i] * in[3][i]));
     return r;
 }
 
 std::vector<int64_t> ref_medium(const std::vector<std::vector<int64_t>>& in) {
     // u1=c1*c2, u2=c3*c4, u3=c5*c6, y=(u1+u2)*u3
-    std::vector<int64_t> r(kBatchSize4K, 0);
-    for (size_t i = 0; i < kBatchSize4K; ++i) {
+    size_t bs = in[0].size();
+    std::vector<int64_t> r(bs, 0);
+    for (size_t i = 0; i < bs; ++i) {
         int64_t u1 = mod(in[0][i] * in[1][i]);
         int64_t u2 = mod(in[2][i] * in[3][i]);
         int64_t u3 = mod(in[4][i] * in[5][i]);
@@ -82,18 +83,18 @@ std::vector<int64_t> ref_medium(const std::vector<std::vector<int64_t>>& in) {
     return r;
 }
 
-// 4K-slot reference: add
-std::vector<int64_t> ref_add_4k(const std::vector<std::vector<int64_t>>& in) {
-    std::vector<int64_t> r(kBatchSize4K);
-    for (size_t i = 0; i < kBatchSize4K; ++i)
+std::vector<int64_t> ref_add(const std::vector<std::vector<int64_t>>& in) {
+    size_t bs = in[0].size();
+    std::vector<int64_t> r(bs);
+    for (size_t i = 0; i < bs; ++i)
         r[i] = mod(in[0][i] + in[1][i]);
     return r;
 }
 
-// 4K-slot reference: mul
-std::vector<int64_t> ref_mul_4k(const std::vector<std::vector<int64_t>>& in) {
-    std::vector<int64_t> r(kBatchSize4K);
-    for (size_t i = 0; i < kBatchSize4K; ++i)
+std::vector<int64_t> ref_mul(const std::vector<std::vector<int64_t>>& in) {
+    size_t bs = in[0].size();
+    std::vector<int64_t> r(bs);
+    for (size_t i = 0; i < bs; ++i)
         r[i] = mod(in[0][i] * in[1][i]);
     return r;
 }
@@ -103,9 +104,8 @@ std::vector<int64_t> ref_mul_4k(const std::vector<std::vector<int64_t>>& in) {
 struct WorkloadTestParams {
     std::string id;
     std::vector<int> seeds;
-    size_t batch_size;
     std::function<std::vector<int64_t>(const std::vector<std::vector<int64_t>>&)> ref_fn;
-    // selection mask: which slots to compare (empty = all batch_size)
+    // selection mask: which slots to compare (empty = all)
     std::vector<size_t> check_slots;
 };
 
@@ -121,21 +121,23 @@ void run_workload_test(const WorkloadTestParams& p) {
     if (it->second.gen_keys) it->second.gen_keys(cc, kp);
     cc->EvalMultKeyGen(kp.secretKey);
 
+    auto batch_size = cc->GetRingDimension() / 2;
+
     std::vector<std::vector<int64_t>> inputs;
     std::vector<CT> cts;
     for (size_t i = 0; i < p.seeds.size(); ++i) {
-        auto inp = generate_input(p.seeds[i], p.batch_size);
+        auto inp = generate_input(p.seeds[i], batch_size);
         inputs.push_back(inp);
         cts.push_back(encrypt(cc, kp.publicKey, inp));
     }
 
     auto ct_out = it->second.eval(cc, cts);
-    auto got = decrypt(cc, kp.secretKey, ct_out, p.batch_size);
+    auto got = decrypt(cc, kp.secretKey, ct_out, batch_size);
 
     auto expected = p.ref_fn(inputs);
 
     if (p.check_slots.empty()) {
-        for (size_t i = 0; i < p.batch_size; ++i) {
+        for (size_t i = 0; i < batch_size; ++i) {
             EXPECT_EQ(got[i], expected[i])
                 << "mismatch at slot " << i << " for workload " << p.id;
         }
@@ -150,27 +152,27 @@ void run_workload_test(const WorkloadTestParams& p) {
 // ── test cases ───────────────────────────────────────────────────────────────
 
 TEST(Workloads, Noop) {
-    run_workload_test({"noop", {42}, kBatchSize, ref_noop, {}});
+    run_workload_test({"noop", {42}, ref_noop, {}});
 }
 
 TEST(Workloads, Toy) {
-    run_workload_test({"toy", {42, 165}, kBatchSize, ref_toy, {}});
+    run_workload_test({"toy", {42, 165}, ref_toy, {}});
 }
 
 TEST(Workloads, Small) {
-    run_workload_test({"small", {42, 165, 288, 411}, kBatchSize4K, ref_small, {}});
+    run_workload_test({"small", {42, 165, 288, 411}, ref_small, {}});
 }
 
 TEST(Workloads, Medium) {
-    run_workload_test({"medium", {42, 165, 288, 411, 534, 657}, kBatchSize4K, ref_medium, {}});
+    run_workload_test({"medium", {42, 165, 288, 411, 534, 657}, ref_medium, {}});
 }
 
-TEST(Workloads, BgvAdd4K) {
-    run_workload_test({"BGV-Add-4K", {42, 165}, kBatchSize4K, ref_add_4k, {}});
+TEST(Workloads, BGVAdd4K) {
+    run_workload_test({"BGV-Add-4K", {42, 165}, ref_add, {}});
 }
 
-TEST(Workloads, BgvMul4K) {
-    run_workload_test({"BGV-Mul-4K", {42, 165}, kBatchSize4K, ref_mul_4k, {}});
+TEST(Workloads, BGVMul4K) {
+    run_workload_test({"BGV-Mul-4K", {42, 165}, ref_mul, {}});
 }
 
 }  // namespace
