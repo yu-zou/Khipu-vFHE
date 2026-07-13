@@ -302,11 +302,11 @@ The prototype ships with 6 built-in workloads:
 | Workload ID | Description | Multiplicative Depth | Input Size |
 |-------------|-------------|---------------------|------------|
 | `noop` | Identity pass-through | 0 | 1 × 64 slots |
-| `toy` | EvalMult of two vectors (c1 * c2 mod 65537) | 1 | 2 × 64 slots |
-| `small` | Two ct-ct multiplications + one ct-ct addition: (c1·c2)+(c3·c4) | 1 | 4 × 64 slots |
-| `medium` | Three ct-ct mults + one ct-ct add + one ct-ct mult: (u1+u2)·u3 where u1=c1·c2, u2=c3·c4, u3=c5·c6 | 2 | 6 × 64 slots |
-| `BGV-Add-4K` | EvalAdd | 0 | 2 × 4096 slots |
-| `BGV-Mul-4K` | EvalMult | 1 | 2 × 4096 slots |
+| `toy` | `EvalMultNoRelin(c1, c2)` | 1 | 2 × 64 slots |
+| `small` | Two ct-ct mults + one ct-ct add: `(c1*c2) + (c3*c4)` | 1 | 4 × 64 slots |
+| `medium` | Three ct-ct mults + two ct-ct adds: `(c1*c2) + (c3*c4) + (c5*c6)` | 1 | 6 × 64 slots |
+| `BGV-Add-4K` | `EvalAdd(c1, c2)` at 4096 slots | 0 | 2 × 4096 slots |
+| `BGV-Mul-4K` | `EvalMultNoRelin(c1, c2)` at 4096 slots | 1 | 2 × 4096 slots |
 
 ### Running Benchmarks
 
@@ -471,15 +471,11 @@ tee-vfhe-bgvrns/
 │       └── server_main.cpp     # Server executable
 ├── workloads/
 │   ├── noop.cpp                # Identity pass-through
-│   ├── toy.cpp                 # EvalMult of two vectors
-│   ├── small_dot.cpp           # 32-element dot product
-│   ├── medium_matvec.cpp       # 64×64 matrix-vector multiply
-│   ├── micro_add.cpp           # Microbenchmark: addition
-│   ├── micro_mul.cpp           # Microbenchmark: multiplication
-│   ├── micro_modswitch.cpp     # Microbenchmark: mod switch
-│   ├── micro_rotate.cpp        # Microbenchmark: rotation
-│   ├── app_matvec.cpp          # Application: 64×64 integer matvec
-│   └── app_inference.cpp       # Application: 2-layer NN
+│   ├── toy.cpp                 # EvalMultNoRelin(c1, c2)
+│   ├── small_circuit.cpp       # (c1*c2)+(c3*c4), 2 mults + 1 add
+│   ├── medium_circuit.cpp      # (c1*c2)+(c3*c4)+(c5*c6), 3 mults + 2 adds
+│   ├── bgv_add_4k.cpp          # EvalAdd(c1, c2) at 4096 slots
+│   └── bgv_mul_4k.cpp          # EvalMultNoRelin(c1, c2) at 4096 slots
 ├── tests/
 │   ├── CMakeLists.txt          # Test build configuration
 │   ├── test_attestation.cpp    # Attestation tests
@@ -537,10 +533,9 @@ tee-vfhe-bgvrns/
 **Symptom**: Benchmark runs out of memory
 
 **Solution**:
-1. Use power-of-two rotation keys (already enabled for `app_matvec` and `app_inference`)
-2. The BGV prototype generates evaluation-key blobs of approximately 184 MB
-3. Use smaller workloads (`noop`, `toy`, `small`) for memory-constrained environments
-4. Increase system memory or swap space
+1. The BGV prototype generates evaluation-key blobs of approximately 184 MB
+2. Use smaller workloads (`noop`, `toy`, `small`) for memory-constrained environments
+3. Increase system memory or swap space
 
 ## Security Considerations
 
