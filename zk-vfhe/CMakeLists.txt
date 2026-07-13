@@ -16,6 +16,18 @@ find_package(OpenFHE CONFIG REQUIRED)
 # Apply OpenFHE build flags (includes -march=native -fopenmp -DMATHBACKEND=4)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenFHE_CXX_FLAGS}")
 
+# zkOpenFHE + libsnark require CURVE_BN128 so libff::default_ec_pp resolves
+# to alt_bn128 (matching both the GG and PGHR13 ppzksnark defaults).
+add_compile_definitions(CURVE_BN128)
+
+# libff/libsnark serialization uses #ifdef BINARY_OUTPUT to select binary vs
+# decimal mode for bigint/field-element stream operators. libsnark is built
+# with BINARY_OUTPUT=ON; without matching it here, our compilation unit
+# instantiates the decimal code path while libsnark's compiled code uses
+# binary, causing mismatched proof/VK/public-input serialization and
+# assertion failures in bigint::operator>>. Define it globally.
+add_compile_definitions(BINARY_OUTPUT)
+
 # OpenFHE imported targets do not carry include dirs; add them globally.
 # Consumer needs ${OpenFHE_INCLUDE} + {core,pke,binfhe} subdirs.
 # zkOpenFHE proofsystem headers are at pke/proofsystem/ (added explicitly).
@@ -38,6 +50,11 @@ find_library(FF_LIBRARY ff PATHS /usr/local/lib REQUIRED)
 find_library(ZM_LIBRARY zm PATHS /tmp/zkOpenFHE/build/lib /usr/local/lib)
 find_library(GMP_LIBRARY gmp REQUIRED)
 find_library(GMPXX_LIBRARY gmpxx REQUIRED)
+
+# libfqfft headers ship inside libsnark's depends/ tree (libsnark's r1cs_ppzksnark
+# .tcc pulls in <libfqfft/.../evaluation_domain.hpp>).
+set(LIBFQFFT_INCLUDE_DIR /tmp/zkOpenFHE/third-party/libsnark/depends/libfqfft CACHE PATH "libfqfft headers")
+include_directories(${LIBFQFFT_INCLUDE_DIR})
 
 # Google Test - prefer system package, fall back to FetchContent tarball.
 find_package(GTest QUIET)
