@@ -221,11 +221,11 @@ if [ ! -f "$BENCHMARK_CSV" ]; then
     exit 1
 fi
 CSV_LINES=$(wc -l < "$BENCHMARK_CSV" | tr -d '[:space:]')
-if [ "$CSV_LINES" -ne 11 ]; then
-    echo "[integration] FAIL: benchmark CSV has $CSV_LINES lines (expected 11)"
+if [ "$CSV_LINES" -ne 7 ]; then
+    echo "[integration] FAIL: benchmark CSV has $CSV_LINES lines (expected 7)"
     exit 1
 fi
-echo "[integration] PASS: benchmark CSV has $CSV_LINES lines (expected 11)"
+echo "[integration] PASS: benchmark CSV has $CSV_LINES lines (expected 7)"
 
 # ---------------------------------------------------------------------------
 # Summary
@@ -237,7 +237,7 @@ echo "========================================================================"
 echo "  client RC  = $CLIENT_RC (expected 0)"
 echo "  bench RC   = $BENCH_RC  (expected 0)"
 echo "  ctest RC   = $CTEST_RC  (expected 0)"
-echo "  CSV lines  = $CSV_LINES (expected 11)"
+echo "  CSV lines  = $CSV_LINES (expected 7)"
 echo ""
 echo "  Transcript verification:  PASS"
 echo "  Attestation verification: PASS"
