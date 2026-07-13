@@ -2,15 +2,18 @@
 // 64x64 dense integer matrix-vector multiplication using the diagonal method.
 // One input ciphertext encodes x; the matrix W is deterministic and embedded
 // in the eval function (model weights live inside the TEE).
+// Uses the shared baseline context (batchSize=4096, ringDim=8192, depth=3).
 // Uses power-of-two rotation keys {±1,±2,±4,±8,±16,±32} with composed
 // rotations to keep eval-key memory footprint under ~184 MB (vs ~2 GB for
 // all ±1..±63). Self-registers into the global WorkloadRegistry at static init
 // time.
 
+#include "common/baseline_params.h"
 #include "server/workload_registry.h"
 #include "openfhe.h"
 
 #include <cstdint>
+#include <stdexcept>
 #include <vector>
 
 namespace {
@@ -52,7 +55,7 @@ tee::CT compose_rotate(tee::CC cc, const tee::CT& ct, int32_t idx) {
     if (idx == 0) return ct;
     tee::CT result = ct;
     uint32_t abs_idx = (idx > 0) ? static_cast<uint32_t>(idx)
-                                  : static_cast<uint32_t>(-idx);
+                                 : static_cast<uint32_t>(-idx);
     int32_t sign = (idx > 0) ? 1 : -1;
     for (int bit = 0; bit < 6; ++bit) {
         if (abs_idx & (1u << bit)) {
@@ -60,24 +63,6 @@ tee::CT compose_rotate(tee::CC cc, const tee::CT& ct, int32_t idx) {
         }
     }
     return result;
-}
-
-tee::CC make_medium_matvec_context() {
-    CCParams<CryptoContextBGVRNS> params;
-    params.SetMultiplicativeDepth(2);
-    params.SetPlaintextModulus(65537);
-    params.SetBatchSize(64);
-    params.SetSecurityLevel(HEStd_128_classic);
-    params.SetKeySwitchTechnique(BV);
-    params.SetDigitSize(4);
-    params.SetScalingTechnique(FIXEDMANUAL);
-    params.SetFirstModSize(60);
-    auto cc = GenCryptoContext(params);
-    cc->Enable(PKE);
-    cc->Enable(KEYSWITCH);
-    cc->Enable(LEVELEDSHE);
-    cc->Enable(ADVANCEDSHE);  // Required for EvalRotate / rotation key gen.
-    return cc;
 }
 
 void medium_matvec_gen_keys(tee::CC cc,
@@ -95,7 +80,7 @@ void medium_matvec_gen_keys(tee::CC cc,
 //   where diag_d[i] = W[i][(i+d) % 64]
 //   and   rot(x, d)[i] = x[(i+d) % 64]   (left cyclic rotation within batch)
 //
-// EvalRotate wraps at the full ring dimension (8192 slots), not batchSize (64).
+// EvalRotate wraps at the full ring dimension (8192 slots), not batchSize (4096).
 // For each d in 1..63, we split the rotation into two parts:
 //   low part  (slots 0..63-d): EvalRotate(x, d) is correct here
 //   high part (slots 64-d..63): EvalRotate(x, d-64) gives the wrapped values
@@ -155,8 +140,9 @@ tee::CT medium_matvec_eval(tee::CC cc, const std::vector<tee::CT>& inputs) {
 }
 
 // Self-register at static initialization time.
+// Uses the shared baseline context (batchSize=4096, ringDim=8192, depth=3).
 [[maybe_unused]] tee::Register g_medium_reg("medium",
-    tee::Workload{make_medium_matvec_context, medium_matvec_eval,
+    tee::Workload{make_baseline_bgvrns_context, medium_matvec_eval,
                   medium_matvec_gen_keys});
 
 }  // namespace

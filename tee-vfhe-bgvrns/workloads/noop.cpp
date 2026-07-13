@@ -2,30 +2,16 @@
 // Self-registers into the global WorkloadRegistry at static init time.
 
 #include "server/workload_registry.h"
+#include "common/baseline_params.h"
 #include "openfhe.h"
 
 namespace {
 
 using namespace lbcrypto;
 
-tee::CC make_noop_context() {
-    CCParams<CryptoContextBGVRNS> params;
-    params.SetMultiplicativeDepth(2);
-    params.SetPlaintextModulus(65537);
-    params.SetBatchSize(64);
-    params.SetSecurityLevel(HEStd_128_classic);
-    params.SetScalingTechnique(FIXEDMANUAL);
-    params.SetKeySwitchTechnique(BV);
-    params.SetDigitSize(4);
-    params.SetFirstModSize(60);
-    auto cc = GenCryptoContext(params);
-    cc->Enable(PKE);
-    cc->Enable(KEYSWITCH);
-    cc->Enable(LEVELEDSHE);
-    cc->Enable(ADVANCEDSHE);
-    return cc;
-}
-
+// noop uses the shared baseline BGV context so that the client-encrypted
+// ciphertexts match the server's context exactly (identical ringDim,
+// batchSize, depth, and SecurityLevel).
 tee::CT noop_eval(tee::CC /*cc*/, const std::vector<tee::CT>& inputs) {
     if (inputs.empty()) {
         throw std::runtime_error("noop requires at least 1 input ciphertext");
@@ -35,6 +21,6 @@ tee::CT noop_eval(tee::CC /*cc*/, const std::vector<tee::CT>& inputs) {
 
 // Self-register at static initialization time.
 [[maybe_unused]] tee::Register g_noop_reg("noop",
-    tee::Workload{make_noop_context, noop_eval, nullptr});
+    tee::Workload{make_baseline_bgvrns_context, noop_eval, nullptr});
 
 }  // namespace
