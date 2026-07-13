@@ -61,15 +61,15 @@ The default BGVrns parameter set is:
 | Parameter | Value |
 |-----------|-------|
 | `plaintextModulus` | 65537 |
-| `batchSize` | 64 |
-| `multiplicativeDepth` | 2 |
+| `batchSize` | 4096 |
+| `multiplicativeDepth` | 4 |
 | `securityStandard` | HEStd_128_classic |
 | `scalingTechnique` | FIXEDMANUAL |
 | `keySwitchingTechnique` | BV |
 | `digitSize` | 4 |
 | `firstModSize` | 60 |
 
-The `app_inference` workload uses `multiplicativeDepth=5` to support its two-layer neural network. All other workloads use the default depth of 2 or less.
+All workloads use this default parameter set.
 
 ## Prerequisites
 
@@ -297,18 +297,16 @@ The server will:
 
 ### Available Workloads
 
+The prototype ships with 6 built-in workloads:
+
 | Workload ID | Description | Multiplicative Depth | Input Size |
 |-------------|-------------|---------------------|------------|
 | `noop` | Identity pass-through | 0 | 1 × 64 slots |
 | `toy` | EvalMult of two vectors (c1 * c2 mod 65537) | 1 | 2 × 64 slots |
-| `small` | 32-element dot product via EvalMult + EvalSum | 2 | 1 × 64 slots |
-| `medium` | 64×64 matrix-vector multiply (masked diagonal method) | 2 | 1 × 64 slots |
-| `micro_add` | EvalAdd | 0 | 2 × 64 slots |
-| `micro_mul` | EvalMult | 1 | 2 × 64 slots |
-| `micro_modswitch` | ModReduce (preserves plaintext) | 0 | 1 × 64 slots |
-| `micro_rotate` | EvalRotate(ct, 1) | 0 | 1 × 64 slots |
-| `app_matvec` | 64×64 integer matvec (power-of-two rotation keys) | 2 | 1 × 64 slots |
-| `app_inference` | 2-layer NN (32→16→10, z² activation) | 5 | 1 × 64 slots |
+| `small` | Two ct-ct multiplications + one ct-ct addition: (c1·c2)+(c3·c4) | 1 | 4 × 64 slots |
+| `medium` | Three ct-ct mults + one ct-ct add + one ct-ct mult: (u1+u2)·u3 where u1=c1·c2, u2=c3·c4, u3=c5·c6 | 2 | 6 × 64 slots |
+| `BGV-Add-4K` | EvalAdd | 0 | 2 × 4096 slots |
+| `BGV-Mul-4K` | EvalMult | 1 | 2 × 4096 slots |
 
 ### Running Benchmarks
 
@@ -334,7 +332,7 @@ toy,12345,678,2345,1234,16789,45678,1024,4096
 ...
 ```
 
-The benchmark runner writes the CSV to stdout and diagnostic messages to stderr. The output contains a header line plus one line for each of the 10 workloads, for a total of 11 lines.
+The benchmark runner writes the CSV to stdout and diagnostic messages to stderr. The output contains a header line plus one line for each of the 6 workloads, for a total of 7 lines.
 
 **Metrics:**
 - `fhe_eval_us` - FHE computation time (microseconds)
@@ -412,7 +410,7 @@ Test project /path/to/tee-vfhe-bgvrns/build
 - Full verification flow
 
 **test_workloads** - Workload correctness:
-- All 10 workloads produce correct results
+- All 6 workloads produce correct results
 - Exact mod-65537 match after normalization
 
 #### 3. Security Tests (Negative Tests)
