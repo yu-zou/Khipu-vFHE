@@ -180,6 +180,8 @@ void handle_client(int client_fd) {
     // (mult, sum, automorphism) for each blob; at least one must succeed.
     try {
         for (auto& kb : eval_key_blobs) {
+            if (kb.empty()) continue;  // Skip empty blobs
+
             std::string s(kb.begin(), kb.end());
             bool deserialized = false;
 
