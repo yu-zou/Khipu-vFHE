@@ -1,7 +1,11 @@
 // BGV small_circuit workload: y = (c1*c2) + (c3*c4)
 // 4 input ciphertexts, 2 ct-ct EvalMult, 1 ct-ct EvalAdd.
 // Uses the shared baseline context (batchSize=4096, ringDim=8192, depth=4).
-// CT-CT operations only — no rotations, no summation, no modulus reduction.
+// CT-CT operations only - no rotations, no summation, no modulus reduction.
+//
+// NOTE: Uses EvalMultNoRelin (no relinearization) to match Prototype B's
+// zkOpenFHE pipeline. See toy.cpp for the rationale (zkOpenFHE
+// RelinearizeConstraint is buggy).
 
 #include "common/baseline_params.h"
 #include "server/workload_registry.h"
@@ -20,8 +24,8 @@ tee::CT small_eval(tee::CC cc, const std::vector<tee::CT>& inputs) {
     const auto& c3 = inputs[2];
     const auto& c4 = inputs[3];
 
-    auto u1 = cc->EvalMult(c1, c2);
-    auto u2 = cc->EvalMult(c3, c4);
+    auto u1 = cc->EvalMultNoRelin(c1, c2);
+    auto u2 = cc->EvalMultNoRelin(c3, c4);
     return cc->EvalAdd(u1, u2);
 }
 
