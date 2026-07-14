@@ -31,8 +31,8 @@ echo "✓ Prototype B built"
 E_CSV="$RESULTS_DIR/preliminary_e_vs_b_E_${TIMESTAMP}.csv"
 B_CSV="$RESULTS_DIR/preliminary_e_vs_b_B_${TIMESTAMP}.csv"
 
-echo "workload,e2e_latency_us,attestation_us,fhe_eval_us" > "$E_CSV"
-echo "workload,e2e_latency_us,attestation_us,fhe_eval_us" > "$B_CSV"
+echo "workload,server_e2e_us,client_us,attestation_us,fhe_eval_us" > "$E_CSV"
+echo "workload,server_e2e_us,client_us,attestation_us,fhe_eval_us" > "$B_CSV"
 
 # ─── Prototype E ────────────────────────────────────────────────────────────────
 echo ""
@@ -61,9 +61,9 @@ E_OUTPUT=$(./build/benchmark_runner --host 127.0.0.1 --port 8080 2>&1) || {
     exit 1
 }
 
-# E CSV header: workload,input_loading,fhe_eval,transcript,quote,packaging,verify,e2e,peak_mem,transcript_bytes,quote_bytes (11 cols)
-#   col1=workload, col8=e2e, col4=transcript/attestation_us, col3=fhe_eval
-echo "$E_OUTPUT" | awk -F',' 'NR>1 && $1 ~ /^(noop|toy|small|medium|BGV.Add.4K|BGV.Mul.4K)$/ {print $1","$8","$4","$3}' >> "$E_CSV"
+# E CSV: workload(1),server_e2e(2),client(3),input_loading(4),fhe_eval(5),transcript(6),quote(7),packaging(8),verify(9),peak_mem(10),transcript_bytes(11),quote_bytes(12)
+#   Extract: workload, server_e2e, client, transcript/attestation, fhe_eval
+echo "$E_OUTPUT" | awk -F',' 'NR>1 && $1 ~ /^(noop|toy|small|medium|BGV.Add.4K|BGV.Mul.4K)$/ {print $1","$2","$3","$6","$5}' >> "$E_CSV"
 
 kill $SERVER_E_PID 2>/dev/null || true
 wait $SERVER_E_PID 2>/dev/null || true
@@ -97,9 +97,9 @@ B_OUTPUT=$(./build/benchmark_runner --host 127.0.0.1 --port 8081 2>&1) || {
     exit 1
 }
 
-# B CSV header: workload,input_loading,fhe_eval,witness,proof,packaging,verify,e2e,peak_mem,proof_size (10 cols)
-#   col1=workload, col8=e2e, col4=witness/attestation_us, col3=fhe_eval
-echo "$B_OUTPUT" | awk -F',' 'NR>1 && $1 ~ /^(noop|toy|small|medium|BGV.Add.4K|BGV.Mul.4K)$/ {print $1","$8","$4","$3}' >> "$B_CSV"
+# B CSV: workload(1),server_e2e(2),client(3),input_loading(4),fhe_eval(5),witness(6),proof(7),packaging(8),verify(9),peak_mem(10),proof_size(11)
+#   Extract: workload, server_e2e, client, witness/attestation, fhe_eval
+echo "$B_OUTPUT" | awk -F',' 'NR>1 && $1 ~ /^(noop|toy|small|medium|BGV.Add.4K|BGV.Mul.4K)$/ {print $1","$2","$3","$6","$5}' >> "$B_CSV"
 
 kill $SERVER_B_PID 2>/dev/null || true
 wait $SERVER_B_PID 2>/dev/null || true
@@ -120,9 +120,9 @@ echo "This benchmark compares Prototype E (BGV with TDX attestation) against Pro
 echo ""
 echo "## Results"
 echo ""
-echo "### End-to-End Latency (μs)"
+echo "### Server E2E Latency (μs)"
 echo ""
-echo "| Workload | Prototype E | Prototype B | Ratio (E/B) |"
+echo "| Workload | Prototype E | Prototype B | Ratio (B/E) |"
 echo "|----------|-------------|-------------|-------------|"
 } > "$SUMMARY"
 
@@ -130,8 +130,27 @@ WORKLOADS="noop toy small medium BGV-Add-4K BGV-Mul-4K"
 for workload in $WORKLOADS; do
     E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f2)
     B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f2)
-    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$B_VAL" != "0" ] && [ "$E_VAL" != "0" ]; then
-        RATIO=$(echo "scale=2; $E_VAL / $B_VAL" | bc)
+    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$E_VAL" != "0" ]; then
+        RATIO=$(echo "scale=2; $B_VAL / $E_VAL" | bc)
+        echo "| $workload | $E_VAL | $B_VAL | $RATIO |" >> "$SUMMARY"
+    else
+        echo "| $workload | $E_VAL | $B_VAL | N/A |" >> "$SUMMARY"
+    fi
+done
+
+{
+echo ""
+echo "### Client-side Execution (μs)"
+echo ""
+echo "| Workload | Prototype E | Prototype B | Ratio (B/E) |"
+echo "|----------|-------------|-------------|-------------|"
+} >> "$SUMMARY"
+
+for workload in $WORKLOADS; do
+    E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f3)
+    B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f3)
+    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$E_VAL" != "0" ]; then
+        RATIO=$(echo "scale=2; $B_VAL / $E_VAL" | bc)
         echo "| $workload | $E_VAL | $B_VAL | $RATIO |" >> "$SUMMARY"
     else
         echo "| $workload | $E_VAL | $B_VAL | N/A |" >> "$SUMMARY"
@@ -142,15 +161,15 @@ done
 echo ""
 echo "### Attestation Overhead (μs)"
 echo ""
-echo "| Workload | Prototype E (transcript) | Prototype B (witness) | Ratio (E/B) |"
+echo "| Workload | Prototype E (transcript) | Prototype B (witness) | Ratio (B/E) |"
 echo "|----------|--------------------------|----------------------|-------------|"
 } >> "$SUMMARY"
 
 for workload in $WORKLOADS; do
-    E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f3)
-    B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f3)
-    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$B_VAL" != "0" ] && [ "$E_VAL" != "0" ]; then
-        RATIO=$(echo "scale=2; $E_VAL / $B_VAL" | bc)
+    E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f4)
+    B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f4)
+    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$E_VAL" != "0" ]; then
+        RATIO=$(echo "scale=2; $B_VAL / $E_VAL" | bc)
         echo "| $workload | $E_VAL | $B_VAL | $RATIO |" >> "$SUMMARY"
     else
         echo "| $workload | $E_VAL | $B_VAL | N/A |" >> "$SUMMARY"
@@ -161,15 +180,15 @@ done
 echo ""
 echo "### FHE Execution Time (μs)"
 echo ""
-echo "| Workload | Prototype E | Prototype B | Ratio (E/B) |"
+echo "| Workload | Prototype E | Prototype B | Ratio (B/E) |"
 echo "|----------|-------------|-------------|-------------|"
 } >> "$SUMMARY"
 
 for workload in $WORKLOADS; do
-    E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f4)
-    B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f4)
-    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$B_VAL" != "0" ] && [ "$E_VAL" != "0" ]; then
-        RATIO=$(echo "scale=2; $E_VAL / $B_VAL" | bc)
+    E_VAL=$(grep "^$workload," "$E_CSV" | cut -d',' -f5)
+    B_VAL=$(grep "^$workload," "$B_CSV" | cut -d',' -f5)
+    if [ -n "$E_VAL" ] && [ -n "$B_VAL" ] && [ "$E_VAL" != "0" ]; then
+        RATIO=$(echo "scale=2; $B_VAL / $E_VAL" | bc)
         echo "| $workload | $E_VAL | $B_VAL | $RATIO |" >> "$SUMMARY"
     else
         echo "| $workload | $E_VAL | $B_VAL | N/A |" >> "$SUMMARY"
@@ -199,8 +218,9 @@ echo "## Notes"
 echo ""
 echo "- This is a preliminary observation only, not an official statistical comparison"
 echo "- Both prototypes use identical BGV parameters (ring=8192, depth=4, batch=4096, plaintext=65537)"
-echo "- E attestation = transcript_us (col 4); B attestation = witness_us (col 4)"
-echo "- E/B fhe_eval = fhe_eval_us (col 3 for both)"
+echo "- Server E2E = sum of server-reported phases (input_loading + fhe_eval + transcript/quote + packaging)"
+echo "- Client-side = request_prep + network_transfer + verify"
+echo "- E attestation = transcript_us; B attestation = witness_us"
 echo "- Column mapping verified against benchmark_runner source code"
 } >> "$SUMMARY"
 

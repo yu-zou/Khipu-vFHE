@@ -207,8 +207,9 @@ int main(int argc, char** argv) {
     const auto& registry = get_workload_registry();
 
     // CSV header + rows go to stdout; everything else to stderr.
-    std::cout << "workload,input_loading_us,fhe_eval_us,transcript_us,quote_us,"
-                 "packaging_us,verify_us,e2e_us,peak_mem_kb,transcript_bytes,quote_bytes\n";
+    std::cout << "workload,server_e2e_us,client_us,input_loading_us,fhe_eval_us,"
+                 "transcript_us,quote_us,packaging_us,verify_us,peak_mem_kb,"
+                 "transcript_bytes,quote_bytes\n";
 
     bool all_ok = true;
     for (const auto& spec : kWorkloads) {
@@ -229,6 +230,7 @@ int main(int argc, char** argv) {
             CryptoContextImpl<DCRTPoly>::ClearEvalSumKeys();
             CryptoContextImpl<DCRTPoly>::ClearEvalAutomorphismKeys();
 
+            auto t_prep_start = std::chrono::steady_clock::now();
             auto cc = workload.make_context();
             auto kp = cc->KeyGen();
 
@@ -263,12 +265,13 @@ int main(int argc, char** argv) {
             for (const auto& c : input_ct_blobs) w.write_blob(c);
             w.write_string(spec.id);
 
-            auto t_e2e_start = std::chrono::steady_clock::now();
+            auto t_prep_end = std::chrono::steady_clock::now();
+            auto t_round_trip_start = std::chrono::steady_clock::now();
             TCPClient cli(host, port);
             send_message(cli.fd(), w.data());
             auto resp = recv_message(cli.fd());
             cli.close();
-            auto t_e2e_end = std::chrono::steady_clock::now();
+            auto t_round_trip_end = std::chrono::steady_clock::now();
 
             if (resp.empty()) {
                 std::cerr << "[benchmark] " << spec.id << ": empty response"
@@ -319,9 +322,12 @@ int main(int argc, char** argv) {
                           << std::endl;
             }
 
-            uint64_t e2e_us = static_cast<uint64_t>(
+            uint64_t round_trip_us = static_cast<uint64_t>(
                 std::chrono::duration_cast<std::chrono::microseconds>(
-                    t_e2e_end - t_e2e_start).count());
+                    t_round_trip_end - t_round_trip_start).count());
+            uint64_t request_prep_us = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    t_prep_end - t_prep_start).count());
             uint64_t verify_us = static_cast<uint64_t>(
                 std::chrono::duration_cast<std::chrono::microseconds>(
                     t_verify_end - t_verify_start).count());
@@ -332,14 +338,23 @@ int main(int argc, char** argv) {
             uint64_t packaging_us = tj.value("packaging_us", 0ULL);
             uint64_t json_peak_mem_kb = tj.value("peak_mem_kb", 0ULL);
 
+            // Server-side E2E = sum of all server-reported phases.
+            uint64_t server_e2e_us = input_loading_us + transcript.fhe_eval_us
+                + transcript.transcript_us + transcript.quote_us + packaging_us;
+            // Client-side = request prep + network transfer + verify.
+            uint64_t network_us = (round_trip_us > server_e2e_us)
+                ? (round_trip_us - server_e2e_us) : 0;
+            uint64_t client_us = request_prep_us + network_us + verify_us;
+
             std::cout << spec.id << ","
+                      << server_e2e_us << ","
+                      << client_us << ","
                       << input_loading_us << ","
                       << transcript.fhe_eval_us << ","
                       << transcript.transcript_us << ","
                       << transcript.quote_us << ","
                       << packaging_us << ","
                       << verify_us << ","
-                      << e2e_us << ","
                       << json_peak_mem_kb << ","
                       << transcript_json.size() << ","
                       << quote_bytes.size() << "\n";
