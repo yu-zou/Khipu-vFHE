@@ -9,15 +9,23 @@ enable_testing()
 
 # ── Dependencies ──────────────────────────────────────────────────────────────
 
-# OpenFHE (must be installed separately)
-find_package(OpenFHE CONFIG REQUIRED)
+# OpenFHE (installed to local prefix to avoid conflicts with FIDESlib-patched version)
+# Hint: set -DOpenFHE_DIR=/usr/local/openfhe-stock/lib/OpenFHE when configuring.
+set(OpenFHE_DIR "/usr/local/openfhe-stock" CACHE PATH "OpenFHE install prefix")
+find_package(OpenFHE CONFIG REQUIRED PATHS
+  "${OpenFHE_DIR}/lib/OpenFHE"
+  "${OpenFHE_DIR}/lib/cmake/OpenFHE"
+  NO_DEFAULT_PATH
+)
 
 # Apply OpenFHE build flags (includes -march=native -fopenmp -DMATHBACKEND=4)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenFHE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenFHE_CXX_FLAGS} -std=c++17")
 
 # OpenFHE imported targets do not carry include dirs; add them globally.
 # Consumer needs ${OpenFHE_INCLUDE} + {core,pke,binfhe} subdirs.
+# Also add the parent dir so that #include "openfhe/pke/..." resolves correctly.
 include_directories(
+  /usr/local/openfhe-stock/include
   ${OpenFHE_INCLUDE}
   ${OpenFHE_INCLUDE}/core
   ${OpenFHE_INCLUDE}/pke
