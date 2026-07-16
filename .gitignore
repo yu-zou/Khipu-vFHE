@@ -1,6 +1,7 @@
 /design_guideline/
 /.omo/
 /.codegraph/
+/.opencode/
 
 # Build artifacts
 tee-vfhe/build/
@@ -15,6 +16,10 @@ report.dat
 # Large downloads / vendored source trees (installed to /usr/local)
 thirdparty/openfhe-development/
 thirdparty/openfhe-v1.5.1.tar.gz
+
+# FIDESlib is vendored at thirdparty/FIDESlib (v2.1.3, commit b368ba6);
+# exclude large irrelevant binaries (re-obtainable via re-clone if needed)
+thirdparty/FIDESlib/examples/bert-tiny/src/python/SST-2-BERT-tiny.bin
 
 # zk-vfhe build artifacts
 zk-vfhe/build/
