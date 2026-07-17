@@ -19,7 +19,7 @@ include_directories(
   /usr/local/fideslib/include/fideslib
   /usr/local/nvat/include
 )
-link_directories(/usr/lib64 /usr/local/fideslib/lib64 /usr/local/nvat/lib)
+link_directories(/usr/lib64 /usr/local/fideslib/lib64 /usr/local/nvat/lib /usr/local/cuda/lib64)
 
 find_package(GTest QUIET)
 if(NOT GTest_FOUND)
@@ -74,14 +74,14 @@ target_include_directories(tee_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includ
 target_link_libraries(tee_server PRIVATE
   -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation tcp_transport tee_common OPENFHEpke OPENFHEcore OPENFHEbinfhe
-  fideslib tdx_attest nvat pthread)
+  /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda pthread)
 
 add_executable(tee_client src/client/client_main.cpp)
 target_include_directories(tee_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(tee_client PRIVATE
   tee_verifier -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation tcp_transport tee_common OPENFHEpke OPENFHEcore OPENFHEbinfhe
-  fideslib tdx_attest nvat curl crypto pthread)
+  /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda curl crypto pthread)
 
 add_subdirectory(tests)
 add_subdirectory(benchmark)

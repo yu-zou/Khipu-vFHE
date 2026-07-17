@@ -51,14 +51,14 @@ bool H100EvidenceAdapter::init() {
 
     nvat_sdk_opts_t opts = nullptr;
     nvat_rc_t rc = nvat_sdk_opts_create(&opts);
-    if (rc != NVAT_OK) {
+    if (rc != NVAT_RC_OK) {
         std::cerr << "[h100] nvat_sdk_opts_create failed: " << nvat_rc_to_string(rc) << std::endl;
         return false;
     }
 
     rc = nvat_sdk_init(opts);
-    nvat_sdk_opts_free(opts);
-    if (rc != NVAT_OK) {
+    nvat_sdk_opts_free(&opts);
+    if (rc != NVAT_RC_OK) {
         std::cerr << "[h100] nvat_sdk_init failed: " << nvat_rc_to_string(rc) << std::endl;
         return false;
     }
@@ -81,13 +81,13 @@ GpuEvidencePackage H100EvidenceAdapter::collect_evidence(
     nvat_nonce_t nonce = nullptr;
     rc = nvat_nonce_from_bytes(&nonce,
         reinterpret_cast<const char*>(nonce_bytes.data()), nonce_bytes.size());
-    if (rc != NVAT_OK) {
+    if (rc != NVAT_RC_OK) {
         throw std::runtime_error(std::string("[h100] nonce_from_bytes: ") + nvat_rc_to_string(rc));
     }
 
     nvat_gpu_evidence_source_t source = nullptr;
     rc = nvat_gpu_evidence_source_nvml_create(&source);
-    if (rc != NVAT_OK) {
+    if (rc != NVAT_RC_OK) {
         nvat_nonce_free(&nonce);
         throw std::runtime_error(std::string("[h100] source_nvml_create: ") + nvat_rc_to_string(rc));
     }
@@ -98,7 +98,7 @@ GpuEvidencePackage H100EvidenceAdapter::collect_evidence(
     nvat_gpu_evidence_source_free(&source);
     nvat_nonce_free(&nonce);
 
-    if (rc != NVAT_OK) {
+    if (rc != NVAT_RC_OK) {
         throw std::runtime_error(std::string("[h100] evidence_collect: ") + nvat_rc_to_string(rc));
     }
     if (ev_count == 0 || !ev_arr) {
@@ -108,7 +108,7 @@ GpuEvidencePackage H100EvidenceAdapter::collect_evidence(
     nvat_str_t ev_str = nullptr;
     rc = nvat_gpu_evidence_serialize_json(ev_arr, ev_count, &ev_str);
     nvat_gpu_evidence_array_free(&ev_arr, ev_count);
-    if (rc != NVAT_OK) {
+    if (rc != NVAT_RC_OK) {
         throw std::runtime_error(std::string("[h100] serialize_json: ") + nvat_rc_to_string(rc));
     }
 
