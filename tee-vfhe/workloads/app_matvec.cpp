@@ -82,12 +82,7 @@ void app_matvec_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp
 
 }  // namespace
 
-void register_app_matvec(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_app_matvec_context;
-    w.eval = app_matvec_eval;
-    w.gen_keys = app_matvec_gen_keys;
-    registry["app_matvec"] = std::move(w);
-}
+// Self-register the app_matvec workload
+static Register g_app_matvec_reg("app_matvec", Workload{make_app_matvec_context, app_matvec_eval, app_matvec_gen_keys});
 
 }  // namespace tee

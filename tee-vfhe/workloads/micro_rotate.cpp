@@ -46,12 +46,7 @@ void micro_rotate_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& 
 
 }  // namespace
 
-void register_micro_rotate(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_micro_rotate_context;
-    w.eval = micro_rotate_eval;
-    w.gen_keys = micro_rotate_gen_keys;
-    registry["micro_rotate"] = std::move(w);
-}
+// Self-register the micro_rotate workload
+static Register g_micro_rotate_reg("micro_rotate", Workload{make_micro_rotate_context, micro_rotate_eval, micro_rotate_gen_keys});
 
 }  // namespace tee

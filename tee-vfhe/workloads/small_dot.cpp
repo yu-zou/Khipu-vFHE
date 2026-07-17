@@ -64,12 +64,7 @@ void small_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp) {
 
 }  // namespace
 
-void register_small(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_small_context;
-    w.eval = small_eval;
-    w.gen_keys = small_gen_keys;
-    registry["small"] = std::move(w);
-}
+// Self-register the small workload
+static Register g_small_reg("small", Workload{make_small_context, small_eval, small_gen_keys});
 
 }  // namespace tee

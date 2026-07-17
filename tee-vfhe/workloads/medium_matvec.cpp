@@ -81,12 +81,7 @@ void medium_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp) {
 
 }  // namespace
 
-void register_medium(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_medium_context;
-    w.eval = medium_eval;
-    w.gen_keys = medium_gen_keys;
-    registry["medium"] = std::move(w);
-}
+// Self-register the medium workload
+static Register g_medium_reg("medium", Workload{make_medium_context, medium_eval, medium_gen_keys});
 
 }  // namespace tee

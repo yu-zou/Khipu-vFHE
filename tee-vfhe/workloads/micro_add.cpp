@@ -42,11 +42,7 @@ Ciphertext<DCRTPoly> micro_add_eval(CryptoContext<DCRTPoly> cc,
 
 }  // namespace
 
-void register_micro_add(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_micro_add_context;
-    w.eval = micro_add_eval;
-    registry["micro_add"] = std::move(w);
-}
+// Self-register the micro_add workload
+static Register g_micro_add_reg("micro_add", Workload{make_micro_add_context, micro_add_eval});
 
 }  // namespace tee

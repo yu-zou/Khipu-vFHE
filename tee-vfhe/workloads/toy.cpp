@@ -42,12 +42,6 @@ Ciphertext<DCRTPoly> toy_eval(CryptoContext<DCRTPoly> cc,
 
 }  // namespace
 
-void register_toy(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_toy_context;
-    w.eval = toy_eval;
-    // gen_keys left default-empty: only EvalMultKey is needed.
-    registry["toy"] = std::move(w);
-}
+Register g_toy("toy", {make_toy_context, toy_eval, nullptr});
 
 }  // namespace tee

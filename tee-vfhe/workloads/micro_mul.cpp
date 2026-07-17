@@ -41,11 +41,7 @@ Ciphertext<DCRTPoly> micro_mul_eval(CryptoContext<DCRTPoly> cc,
 
 }  // namespace
 
-void register_micro_mul(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_micro_mul_context;
-    w.eval = micro_mul_eval;
-    registry["micro_mul"] = std::move(w);
-}
+// Self-register the micro_mul workload
+static Register g_micro_mul_reg("micro_mul", Workload{make_micro_mul_context, micro_mul_eval});
 
 }  // namespace tee

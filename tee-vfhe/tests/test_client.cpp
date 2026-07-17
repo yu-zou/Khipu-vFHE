@@ -187,7 +187,6 @@ Hash32 hash_concatenated(const std::vector<std::vector<uint8_t>>& parts) {
 }  // namespace
 
 TEST(ClientLogic, BuildRequestParseResponseDecrypt) {
-    register_all_workloads();
     TCPServer srv("127.0.0.1", 0);
     uint16_t port = srv.port();
     ASSERT_NE(port, 0);
@@ -280,7 +279,6 @@ TEST(ClientLogic, BuildRequestParseResponseDecrypt) {
 }
 
 TEST(ClientLogic, TamperedTranscriptFailsVerify) {
-    register_all_workloads();
     TCPServer srv("127.0.0.1", 0);
     uint16_t port = srv.port();
     ASSERT_NE(port, 0);

@@ -60,7 +60,7 @@ add_executable(test_server
   test_server.cpp
 )
 target_link_libraries(test_server PRIVATE
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common
@@ -78,7 +78,7 @@ add_executable(test_workloads
   test_workloads.cpp
 )
 target_link_libraries(test_workloads PRIVATE
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_common
   GTest::gtest_main
   OPENFHEpke
@@ -94,7 +94,7 @@ add_executable(test_client
 )
 target_link_libraries(test_client PRIVATE
   tee_verifier
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common

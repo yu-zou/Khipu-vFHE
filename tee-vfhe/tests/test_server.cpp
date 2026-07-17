@@ -148,7 +148,6 @@ void run_dispatch_one(TCPServer& srv, std::atomic<bool>& stop) {
 }  // namespace
 
 TEST(Server, NoopWorkloadEndToEnd) {
-    register_all_workloads();
     TCPServer srv("127.0.0.1", 0);
     uint16_t port = srv.port();
     ASSERT_NE(port, 0);
@@ -216,7 +215,6 @@ TEST(Server, NoopWorkloadEndToEnd) {
 }
 
 TEST(Server, UnknownWorkloadReturnsErrorResponse) {
-    register_all_workloads();
     TCPServer srv("127.0.0.1", 0);
     uint16_t port = srv.port();
     ASSERT_NE(port, 0);

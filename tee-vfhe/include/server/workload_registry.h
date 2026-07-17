@@ -22,7 +22,15 @@ struct Workload {
 
 using WorkloadRegistry = std::map<std::string, Workload>;
 
-WorkloadRegistry& get_workload_registry();
-void register_all_workloads();
+inline WorkloadRegistry& get_workload_registry() {
+    static WorkloadRegistry registry;
+    return registry;
+}
+
+struct Register {
+    Register(const std::string& id, Workload w) {
+        get_workload_registry().emplace(id, std::move(w));
+    }
+};
 
 }  // namespace tee

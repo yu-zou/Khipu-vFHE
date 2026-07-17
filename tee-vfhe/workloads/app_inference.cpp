@@ -140,12 +140,7 @@ void app_inference_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>&
 
 }  // namespace
 
-void register_app_inference(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_app_inference_context;
-    w.eval = app_inference_eval;
-    w.gen_keys = app_inference_gen_keys;
-    registry["app_inference"] = std::move(w);
-}
+// Self-register the app_inference workload
+static Register g_app_inference_reg("app_inference", Workload{make_app_inference_context, app_inference_eval, app_inference_gen_keys});
 
 }  // namespace tee

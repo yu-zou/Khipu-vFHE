@@ -333,7 +333,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    register_all_workloads();
 
     std::cerr << "[server] listening on 0.0.0.0:" << port << std::endl;
     TCPServer srv("0.0.0.0", port);

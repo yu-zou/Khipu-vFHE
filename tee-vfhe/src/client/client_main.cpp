@@ -205,7 +205,6 @@ int main(int argc, char** argv) {
     }
 
     try {
-        register_all_workloads();
         auto& registry = get_workload_registry();
         auto it = registry.find(workload_id);
         if (it == registry.end()) {

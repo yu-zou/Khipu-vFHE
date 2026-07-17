@@ -38,11 +38,7 @@ Ciphertext<DCRTPoly> noop_eval(
 
 }  // namespace
 
-void register_noop(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_noop_context;
-    w.eval = noop_eval;
-    registry["noop"] = std::move(w);
-}
+// Self-register the noop workload
+static Register g_noop_reg("noop", Workload{make_noop_context, noop_eval});
 
 }  // namespace tee

@@ -43,11 +43,7 @@ Ciphertext<DCRTPoly> micro_mul_rescale_eval(
 
 }  // namespace
 
-void register_micro_mul_rescale(WorkloadRegistry& registry) {
-    Workload w;
-    w.make_context = make_micro_mul_rescale_context;
-    w.eval = micro_mul_rescale_eval;
-    registry["micro_mul_rescale"] = std::move(w);
-}
+// Self-register the micro_mul_rescale workload
+static Register g_micro_mul_rescale_reg("micro_mul_rescale", Workload{make_micro_mul_rescale_context, micro_mul_rescale_eval});
 
 }  // namespace tee

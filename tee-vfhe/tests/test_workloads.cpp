@@ -39,7 +39,6 @@ struct WorkloadSetup {
 };
 
 WorkloadSetup setup_workload(const std::string& id) {
-    register_all_workloads();
     auto& reg = get_workload_registry();
     auto it = reg.find(id);
     if (it == reg.end()) {

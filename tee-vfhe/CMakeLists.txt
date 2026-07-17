@@ -129,9 +129,8 @@ target_link_libraries(tee_verifier PUBLIC
   sgx_dcap_quoteverify
 )
 
-# ── Library: Server-side workload registry ────────────────────────────────────
+# ── Library: Server-side workloads (self-registration pattern) ─────────────────
 add_library(tee_workloads STATIC
-  src/server/workload_registry.cpp
   workloads/noop.cpp
   workloads/toy.cpp
   workloads/small_dot.cpp
@@ -162,7 +161,7 @@ target_include_directories(tee_server PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 target_link_libraries(tee_server PRIVATE
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common
@@ -182,7 +181,7 @@ target_include_directories(tee_client PRIVATE
 )
 target_link_libraries(tee_client PRIVATE
   tee_verifier
-  tee_workloads
+  -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation
   tcp_transport
   tee_common

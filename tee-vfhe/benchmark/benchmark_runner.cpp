@@ -214,7 +214,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    register_all_workloads();
     auto& registry = get_workload_registry();
 
     std::ofstream csv(output_path);
