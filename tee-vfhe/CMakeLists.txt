@@ -141,6 +141,7 @@ add_library(tee_workloads STATIC
   workloads/micro_rotate.cpp
   workloads/app_matvec.cpp
   workloads/app_inference.cpp
+  workloads/logistic_regression.cpp
 )
 target_include_directories(tee_workloads PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

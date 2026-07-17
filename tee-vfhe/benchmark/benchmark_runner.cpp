@@ -47,6 +47,7 @@ const std::vector<WorkloadSpec> kWorkloads = {
     {"micro_rotate",      1, 32,  42, 0},
     {"app_matvec",        1, 256, 42, 0},
     {"app_inference",     1, 128, 42, 0},
+    {"logistic-regression", 21, 32768, 42, 0},
 };
 
 class BufWriter {
@@ -164,6 +165,83 @@ std::vector<double> gen_input_vec(int slots, int seed) {
     return vals;
 }
 
+// Logistic-regression input generation (same as client_main.cpp).
+std::vector<Ciphertext<DCRTPoly>> gen_logreg_inputs(
+    CryptoContext<DCRTPoly> cc, const lbcrypto::KeyPair<DCRTPoly>& kp) {
+
+    const int kNumFeatures = 196;
+    const int kCols = 256;
+    const int kRows = 128;
+    const int kSlots = 32768;
+    const int kNumBatches = 10;
+
+    std::ifstream ifs("/root/Khipu-vFHE/thirdparty/FIDESlib/examples/logreg/data/mnist_data_train.csv");
+    if (!ifs.is_open()) {
+        throw std::runtime_error("Cannot open mnist_data_train.csv");
+    }
+
+    std::string line;
+    std::getline(ifs, line); // skip header
+
+    std::vector<std::vector<double>> features;
+    std::vector<double> labels;
+    features.reserve(1280);
+    labels.reserve(1280);
+
+    for (int row = 0; row < 1280 && std::getline(ifs, line); ++row) {
+        std::istringstream iss(line);
+        std::string cell;
+        std::vector<double> feat;
+        feat.reserve(kCols);
+
+        for (int f = 0; f < kNumFeatures; ++f) {
+            std::getline(iss, cell, ',');
+            feat.push_back(std::stod(cell));
+        }
+
+        std::getline(iss, cell, ',');
+        double label = std::stod(cell);
+        feat.resize(kCols, 0.0);
+
+        features.push_back(std::move(feat));
+        labels.push_back(label);
+    }
+    ifs.close();
+
+    std::vector<Ciphertext<DCRTPoly>> cts;
+
+    for (int b = 0; b < kNumBatches; ++b) {
+        std::vector<double> vals(kSlots, 0.0);
+        for (int r = 0; r < kRows; ++r) {
+            int sample_idx = b * kRows + r;
+            for (int c = 0; c < kCols; ++c) {
+                vals[r * kCols + c] = features[sample_idx][c];
+            }
+        }
+        auto pt = cc->MakeCKKSPackedPlaintext(vals, 2, 13);
+        auto ct = cc->Encrypt(kp.publicKey, pt);
+        cts.push_back(ct);
+    }
+
+    for (int b = 0; b < kNumBatches; ++b) {
+        std::vector<double> vals(kSlots, 0.0);
+        for (int r = 0; r < kRows; ++r) {
+            int sample_idx = b * kRows + r;
+            vals[r * kCols] = labels[sample_idx];
+        }
+        auto pt = cc->MakeCKKSPackedPlaintext(vals, 2, 13);
+        auto ct = cc->Encrypt(kp.publicKey, pt);
+        cts.push_back(ct);
+    }
+
+    std::vector<double> weights_vals(kSlots, 0.0);
+    auto weights_pt = cc->MakeCKKSPackedPlaintext(weights_vals, 2, 13);
+    auto weights_ct = cc->Encrypt(kp.publicKey, weights_pt);
+    cts.push_back(weights_ct);
+
+    return cts;
+}
+
 long get_peak_mem_kb() {
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
@@ -258,20 +336,28 @@ int main(int argc, char** argv) {
             std::vector<Ciphertext<DCRTPoly>> input_cts;
             std::vector<std::vector<uint8_t>> input_ct_blobs;
 
-            auto vals_a = gen_input_vec(spec.slots, spec.seed_a);
-            auto pt_a = cc->MakeCKKSPackedPlaintext(vals_a);
-            auto ct_a = cc->Encrypt(kp.publicKey, pt_a);
-            input_cts.push_back(ct_a);
-            std::string s_a = serialize_ciphertext(ct_a);
-            input_ct_blobs.emplace_back(s_a.begin(), s_a.end());
+            if (spec.id == "logistic-regression") {
+                input_cts = gen_logreg_inputs(cc, kp);
+                for (const auto& ct : input_cts) {
+                    std::string s = serialize_ciphertext(ct);
+                    input_ct_blobs.emplace_back(s.begin(), s.end());
+                }
+            } else {
+                auto vals_a = gen_input_vec(spec.slots, spec.seed_a);
+                auto pt_a = cc->MakeCKKSPackedPlaintext(vals_a);
+                auto ct_a = cc->Encrypt(kp.publicKey, pt_a);
+                input_cts.push_back(ct_a);
+                std::string s_a = serialize_ciphertext(ct_a);
+                input_ct_blobs.emplace_back(s_a.begin(), s_a.end());
 
-            if (spec.num_inputs >= 2) {
-                auto vals_b = gen_input_vec(spec.slots, spec.seed_b);
-                auto pt_b = cc->MakeCKKSPackedPlaintext(vals_b);
-                auto ct_b = cc->Encrypt(kp.publicKey, pt_b);
-                input_cts.push_back(ct_b);
-                std::string s_b = serialize_ciphertext(ct_b);
-                input_ct_blobs.emplace_back(s_b.begin(), s_b.end());
+                if (spec.num_inputs >= 2) {
+                    auto vals_b = gen_input_vec(spec.slots, spec.seed_b);
+                    auto pt_b = cc->MakeCKKSPackedPlaintext(vals_b);
+                    auto ct_b = cc->Encrypt(kp.publicKey, pt_b);
+                    input_cts.push_back(ct_b);
+                    std::string s_b = serialize_ciphertext(ct_b);
+                    input_ct_blobs.emplace_back(s_b.begin(), s_b.end());
+                }
             }
 
             BufWriter w;
