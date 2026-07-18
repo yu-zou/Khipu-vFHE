@@ -1,127 +1,93 @@
-# TDX Attestation Configuration
+# TDX + GPU Attestation Configuration
 
-## Solution (2026-07-17)
+## Prerequisites (run after each reboot)
 
-TDX quote generation works on this machine (`ecs.gn8v.4xlarge`) by setting
-`tsm_api=0` on the `tdx_guest` kernel module.
+### 1. TDX Attestation: Set `tsm_api=0`
 
-### Key Configuration
-
-```bash
-# /etc/modprobe.d/tdx.conf
-options tdx_guest tsm_api=0
-```
-
-Reload the module to apply:
+TDX quote generation on `ecs.gn8v.4xlarge` (GPU) instances requires `tsm_api=0`
+(the configfs/TSM path doesn't generate quotes on this instance type; the ioctl
+path works correctly).
 
 ```bash
 sudo rmmod tdx_guest
 sudo modprobe tdx_guest tsm_api=0
 ```
 
-### Required Packages (from Alibaba Cloud enclave repo)
-
-```bash
-# Add the Alibaba Cloud enclave yum repo
-token=$(curl -s -X PUT -H "X-aliyun-ecs-metadata-token-ttl-seconds: 5" "http://100.100.100.200/latest/api/token")
-region_id=$(curl -s -H "X-aliyun-ecs-metadata-token: $token" http://100.100.100.200/latest/meta-data/region-id)
-sudo yum-config-manager --add-repo https://enclave-${region_id}.oss-${region_id}-internal.aliyuncs.com/repo/alinux/enclave-expr.repo
-
-# Install TDX attestation packages
-sudo yum install -y libtdx-attest libtdx-attest-devel \
-  libsgx-dcap-ql-devel libsgx-dcap-quote-verify-devel libsgx-dcap-default-qpl-devel \
-  tdx-quote-generation-sample tdx-quote-verification-sample tee-appraisal-tool
-
-# Configure PCCS URL (Alibaba Cloud remote attestation service)
-sudo sed -i "s|PCCS_URL=.*|PCCS_URL=https://sgx-dcap-server.${region_id}.aliyuncs.com/sgx/certification/v4/|" /etc/sgx_default_qcnl.conf
+Persistent config (`/etc/modprobe.d/tdx.conf`):
+```
+options tdx_guest tsm_api=0
 ```
 
-### Why `tsm_api=0`?
+Verify: `cat /sys/module/tdx_guest/parameters/tsm_api` → `N`
 
-The `tdx_guest` module has a `tsm_api` boolean parameter:
+### 2. CUDA/GPU: Set GPU Ready State
 
-- **`tsm_api=1` (configfs/TSM mode)**: The module exposes attestation via
-  `/sys/kernel/config/tsm/report/com.intel.dcap/`. The user writes report data
-  to `inblob` and reads the quote from `outblob`. This mode works on
-  `ecs.g8i.*` instances where the hypervisor supports GetQuote via the TSM
-  configfs interface.
+The H20 GPU has CC (Confidential Computing) mode ON by default. CUDA operations
+fail with "system not yet initialized" until GPU Ready State is set.
 
-- **`tsm_api=0` (ioctl mode)**: The module exposes attestation via ioctl on
-  `/dev/tdx_guest`. The `libtdx_attest` library calls `tdx_att_get_quote()`
-  which uses the ioctl path to make a GetQuote hypercall. This mode works on
-  `ecs.gn8v.*` (GPU) instances.
+```bash
+sudo nvidia-smi conf-compute -srs 1
+```
 
-On this `ecs.gn8v.4xlarge` instance, the configfs `outblob` returns 0 bytes
-(empty) with `tsm_api=1`, meaning the hypervisor does not support GetQuote
-through the TSM configfs path. Switching to `tsm_api=0` enables the ioctl
-path, which successfully generates 5006-byte TD Quotes.
+Verify: `nvidia-smi conf-compute -f` → `CC GPUs Ready State: Ready`
 
-### Cross-Machine Comparison
+Without this, FIDESlib's `LoadContext()` segfaults because CUDA runtime cannot
+initialize.
 
-| Config | Local (gn8v) | Remote (g8i, 39.96.66.195) |
+### Combined Setup Script
+
+```bash
+sudo rmmod tdx_guest && sudo modprobe tdx_guest tsm_api=0
+sudo nvidia-smi conf-compute -srs 1
+```
+
+## Cross-Machine Comparison
+
+| Config | Local (gn8v GPU) | Remote (g8i non-GPU) |
 |---|---|---|
-| Instance type | `ecs.gn8v.4xlarge` (GPU) | `ecs.g8i.2xlarge` (non-GPU) |
+| Instance type | `ecs.gn8v.4xlarge` | `ecs.g8i.2xlarge` |
+| GPU | NVIDIA H20 (CC mode ON) | None |
 | Kernel | `5.10.134-19.7.al8.x86_64` | `5.10.134-19.6.al8.x86_64` |
+| TDX `tsm_api` | **0** (ioctl path) | 1 (configfs path) |
+| GPU Ready State | Must set via `nvidia-smi` | N/A |
 | `/dev/tdx_guest` minor | 124 | 125 |
-| `tsm_api=1` quote works? | No (outblob empty) | Yes (5006 bytes) |
-| `tsm_api=0` quote works? | **Yes** (5006 bytes) | Not tested |
-| sgx-aesm-service | Installed (not needed) | Not installed |
-| PCCS_URL | `sgx-dcap-server.cn-beijing.aliyuncs.com/sgx/certification/v4/` | Same |
-| USE_SECURE_CERT | `=TRUE` | `#USE_SECURE_CERT=FALSE` (commented) |
+| TDX quote generation | Works (ioctl) | Works (configfs) |
+| MRTD | 48 bytes, from quote verification | From configfs |
+| AESM service | Not needed | Not needed |
+| FIDESlib GPU | Requires GPU Ready State | N/A |
 
-### Verification
+## Key Differences Between Instance Types
 
-```bash
-# Verify quote generation
-cat > /tmp/test_quote.c << 'EOF'
-#include <stdio.h>
-#include <string.h>
-#include <tdx_attest.h>
-int main() {
-    tdx_report_data_t rd; memset(&rd, 0, sizeof(rd));
-    tdx_uuid_t kid; uint8_t *qb = NULL; uint32_t qs = 0;
-    tdx_attest_error_t rc = tdx_att_get_quote(&rd, NULL, 0, &kid, &qb, &qs, 0);
-    if (rc == TDX_ATTEST_SUCCESS) {
-        printf("SUCCESS: %u bytes\n", qs);
-        tdx_att_free_quote(qb);
-    } else {
-        printf("FAILED: 0x%x\n", rc);
-    }
-    return rc;
-}
-EOF
-gcc /tmp/test_quote.c -ltdx_attest -o /tmp/test_quote && /tmp/test_quote
-# Expected: SUCCESS: 5006 bytes
-```
+### gn8v (GPU) Instance
+- GPU in CC mode → must set Ready State before CUDA works
+- `tsm_api=0` required for TDX quote generation (configfs path produces empty outblob)
+- TDX device minor 124
+- FIDESlib GPU context initialization works after Ready State is set
+- GPU evidence collection via NVTrust libnvat: 12069 bytes per collection
 
-### Fetching MRTD
+### g8i (non-GPU) Instance  
+- No GPU → no Ready State needed
+- `tsm_api=1` works (configfs path generates quotes)
+- TDX device minor 125
+- Standard TDX attestation flow
 
-```bash
-cat > /tmp/get_mrtd.c << 'EOF'
-#include <stdio.h>
-#include <string.h>
-#include <tdx_attest.h>
-int main() {
-    tdx_report_data_t rd; memset(&rd, 0, sizeof(rd));
-    tdx_report_t rep; memset(&rep, 0, sizeof(rep));
-    if (tdx_att_get_report(&rd, &rep) == TDX_ATTEST_SUCCESS) {
-        for (int i = 96; i < 128; i++) printf("%02x", rep.d[i]);
-        printf("\n");
-    }
-    return 0;
-}
-EOF
-gcc /tmp/get_mrtd.c -ltdx_attest -o /tmp/get_mrtd && /tmp/get_mrtd
-# Output: 43b0aa0aa2a1372ad62f25e5b8ce0c7c9a67a3c28c79c2bc7927ba5a71072c66
-```
+## Software Stack
 
-### Notes
+| Component | Version | Location |
+|---|---|---|
+| Stock OpenFHE | 1.5.1 | `/usr/local/openfhe-stock/` |
+| FIDESlib-patched OpenFHE | 1.5.1 (fideslib-ref-v1.5.1.1) | `/usr/local/openfhe-fideslib/` |
+| FIDESlib | v2.1.3 (commit b368ba6) | `/usr/local/fideslib/lib64/fideslib.a` |
+| NVTrust libnvat | 1.2.2 | `/usr/local/nvat/` |
+| CUDA toolkit | 13.0 | `/usr/local/cuda/` |
+| NVIDIA driver | 580.126.09 | `/lib64/libcuda.so.580.126.09` |
+| GCC (system) | 10.2.1 | `/usr/bin/gcc` |
+| GCC (FIDESlib builds) | 12.3.0 | `/opt/rh/gcc-toolset-12/` |
+| Python | 3.11.13 | For MNIST data generation |
 
-- The `sgx-aesm-service` package is NOT required for TDX quote generation.
-  It's only needed for SGX-based attestation. On TDX instances, the quote
-  generation is handled by the TDX module via hypercalls, not by the AESM/QE.
-- The `USE_SECURE_CERT` setting in `/etc/sgx_default_qcnl.conf` controls TLS
-  certificate verification for the PCCS connection. It does not affect the
-  configfs/ ioctl quote generation path.
-- The MRTD value changes when the kernel or guest image changes. Always fetch
-  a fresh MRTD after rebooting or updating the system.
+## TDX Quote Format
+
+- Quote size: 5006 bytes
+- MRTD: 48 bytes (384 bits), extracted from quote verification JWT
+- Report data: 64 bytes (32 bytes transcript digest + 32 bytes zeros for Prototype A;
+  32 bytes heterogeneous binding digest + 32 bytes zeros for Prototype C)
