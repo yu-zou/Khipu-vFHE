@@ -48,6 +48,25 @@ Transcript generate_transcript(
     return t;
 }
 
+Transcript generate_transcript(
+    const std::vector<uint8_t>& nonce,
+    const Hash32& eval_key_hash,
+    const std::vector<std::vector<uint8_t>>& input_cts,
+    const std::vector<uint8_t>& output_ct) {
+    Transcript t;
+    t.nonce = nonce;
+    t.eval_key_hash = eval_key_hash;
+
+    t.input_ct_hashes.clear();
+    t.input_ct_hashes.reserve(input_cts.size());
+    for (const auto& ct : input_cts) {
+        t.input_ct_hashes.push_back(blake3_hash(ct));
+    }
+
+    t.output_ct_hash = blake3_hash(output_ct);
+    return t;
+}
+
 std::array<uint8_t, 32> compute_transcript_hash(const Transcript& transcript) {
     Transcript t_for_hash = transcript;
     t_for_hash.fhe_eval_us = 0;

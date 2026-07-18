@@ -1,0 +1,12 @@
+Sun Jul 19 02:19:35 AM CST 2026: Starting server
+Server PID=63110
+[server] listening on 0.0.0.0:8111
+[server] bound to port 8111
+Sun Jul 19 02:19:38 AM CST 2026: Starting client
+[client] Wrote 3 eval key blobs to /tmp/eval_keys_63114.bin
+[server] Read 3 eval key blobs from /tmp/eval_keys_63114.bin
+[gpu] Creating FIDESlib GPU context...
+[gpu] Loading context to GPU...
+[client] error: recv failed: unexpected EOF from peer (truncated message)
+Sun Jul 19 02:21:36 AM CST 2026: Client exit=1
+Sun Jul 19 02:21:36 AM CST 2026: Done

@@ -14,6 +14,13 @@ Transcript generate_transcript(
     const std::vector<std::vector<uint8_t>>& input_cts,
     const std::vector<uint8_t>& output_ct);
 
+// Overload with pre-computed eval key hash (for file-based key transfer)
+Transcript generate_transcript(
+    const std::vector<uint8_t>& nonce,
+    const Hash32& eval_key_hash,
+    const std::vector<std::vector<uint8_t>>& input_cts,
+    const std::vector<uint8_t>& output_ct);
+
 std::array<uint8_t, 32> compute_transcript_hash(const Transcript& transcript);
 
 std::vector<uint8_t> generate_tdx_quote(

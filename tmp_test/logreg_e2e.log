@@ -1,0 +1,9 @@
+Sun Jul 19 01:47:25 AM CST 2026: Starting server
+Server PID=58854
+[server] listening on 0.0.0.0:8106
+[server] bound to port 8106
+Sun Jul 19 01:47:28 AM CST 2026: Starting client
+[server] recv failed: recv failed: unexpected EOF from peer (truncated message)
+[client] error: send_message: payload too large (>4GB)
+Sun Jul 19 01:48:31 AM CST 2026: Client exit=1
+Sun Jul 19 01:48:31 AM CST 2026: Done

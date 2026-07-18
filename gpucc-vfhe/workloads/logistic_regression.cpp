@@ -31,6 +31,7 @@ namespace tee {
 
 // Client's public key (set by server_main before calling eval)
 static PublicKey<DCRTPoly> g_client_pk = nullptr;
+static fideslib::KeyPair<fideslib::DCRTPoly> g_server_kp;
 
 void set_client_public_key(PublicKey<DCRTPoly> pk) {
     g_client_pk = pk;
@@ -90,11 +91,11 @@ void logistic_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp) 
     cc->EvalBootstrapKeyGen(kp.secretKey, kBatchSize);
 }
 
-// Create FIDESlib GPU context using the client's public key and eval keys
-static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context() {
-    if (!g_client_pk) {
-        throw std::runtime_error("[gpu] client public key not set");
-    }
+// Create FIDESlib GPU context with server's own keypair
+// The server generates its own keypair and loads to GPU.
+// Client ciphertexts are converted to use the server's keypair via key-switching.
+static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context(
+    CryptoContext<DCRTPoly> server_cc) {
 
     fideslib::CCParams<fideslib::CryptoContextCKKSRNS> params;
     params.SetRingDim(kRingDim);
@@ -116,7 +117,11 @@ static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context() {
     gpu_cc->Enable(fideslib::ADVANCEDSHE);
     gpu_cc->Enable(fideslib::FHE);
 
-    // Set the rotation indexes and bootstrap slots BEFORE LoadContext
+    // Generate server's own keypair
+    auto server_kp = gpu_cc->KeyGen();
+    gpu_cc->EvalMultKeyGen(server_kp.secretKey);
+
+    // Generate rotation keys with the indices needed for logreg
     std::vector<int32_t> rotations;
     for (uint32_t j = 1; j < kCols; j <<= 1) {
         rotations.push_back(j);
@@ -130,79 +135,21 @@ static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context() {
     rotations.push_back(32756);
     rotations.push_back(32720);
     rotations.push_back(32576);
+    gpu_cc->EvalRotateKeyGen(server_kp.secretKey, rotations);
 
-    // Create a FIDESlib public key wrapping the client's OpenFHE public key
-    auto fideslib_pk = std::make_shared<fideslib::PublicKeyImpl<fideslib::DCRTPoly>>();
-    fideslib_pk->pimpl = std::make_any<lbcrypto::PublicKey<lbcrypto::DCRTPoly>>(g_client_pk);
+    // Bootstrap setup
+    std::vector<uint32_t> lb = {kBootLevelBudgetEnc, kBootLevelBudgetDec};
+    std::vector<uint32_t> d1 = {kBootDim1First, kBootDim1Second};
+    gpu_cc->EvalBootstrapSetup(lb, d1, kBatchSize, 0);
+    gpu_cc->EvalBootstrapKeyGen(server_kp.secretKey, kBatchSize);
 
-    // Set up rotation indexes in the FIDESlib context
-    // LoadContext will use these to find and upload rotation keys
-    // We need to set the rotation indexes BEFORE calling LoadContext
-    
-    // Actually, LoadContext reads rotation indexes from the FIDESlib context's
-    // internal state. We need to generate rotation keys in the OpenFHE context
-    // first (which the client did and sent as eval key blobs).
-    // The eval keys are already deserialized into the global OpenFHE eval key map.
-    // LoadContext will find them by key tag.
-    
-    // Set rotation indexes - these tell LoadContext which rotation keys to upload
-    // We need to set this on the FIDESlib context somehow.
-    // Looking at the FIDESlib source, LoadContext reads from:
-    // this->rotation_indexes (a member of CryptoContextImpl)
-    // We can't set this directly. But LoadContext also reads from the OpenFHE
-    // context's rotation key map.
-    
-    // The simplest approach: use the client's public key for LoadContext.
-    // LoadContext will look up eval mult keys by the public key's key tag,
-    // and upload them to GPU. For rotation keys, it will look up by
-    // rotation_indexes which are set by EvalRotateKeyGen.
-    
-    // But we didn't call EvalRotateKeyGen on the FIDESlib context.
-    // The rotation keys are in the OpenFHE global map.
-    
-    // Let me check: does LoadContext also read rotation keys from the
-    // OpenFHE context's rotation key map?
-    // Looking at LoadContext source:
-    // for (const auto& step : this->rotation_indexes) {
-    //     auto raw_rot_ksk = FIDESlib::CKKS::GetRotationKeySwitchKey(pkImpl, step);
-    // This uses GetRotationKeySwitchKey(publicKey, step) which looks up
-    // the rotation key from the OpenFHE context's rotation key map.
-    
-    // But this->rotation_indexes is empty because we didn't call EvalRotateKeyGen
-    // on the FIDESlib context.
-    
-    // We need to populate rotation_indexes. Let me check if there's a setter.
-    // Actually, EvalRotateKeyGen on the FIDESlib context will:
-    // 1. Call OpenFHE's EvalRotateKeyGen (which stores keys in global map)
-    // 2. Store the rotation indexes in the FIDESlib context
-    
-    // But the client already generated rotation keys. The eval key blobs
-    // include the rotation keys. They were deserialized into the OpenFHE
-    // global map. We just need to tell the FIDESlib context which rotations
-    // are needed.
-    
-    // The simplest approach: call EvalRotateKeyGen on the FIDESlib context
-    // with the same rotation indices. This will:
-    // 1. Find the already-deserialized rotation keys in the OpenFHE global map
-    // 2. Store the rotation indexes in the FIDESlib context
-    // 3. Then LoadContext will upload them to GPU
-    
-    // But EvalRotateKeyGen needs a secret key, which the server doesn't have.
-    // And it will try to generate NEW rotation keys, not use the existing ones.
-    
-    // Actually, looking at FIDESlib's EvalRotateKeyGen:
-    // void CryptoContextImpl<DCRTPoly>::EvalRotateKeyGen(...)
-    // It calls the OpenFHE context's EvalRotateKeyGen, which generates new keys.
-    // But the client's keys are already in the global map with a different key tag.
-    
-    // This is getting complex. Let me try a simpler approach:
-    // Just call LoadContext with the client's public key and see what happens.
-    // If rotation keys aren't uploaded, the GPU operations that need rotations
-    // will fall back to CPU.
-    
-    std::cerr << "[gpu] Loading context to GPU with client's public key..." << std::endl;
-    gpu_cc->LoadContext(fideslib_pk);
+    // Load to GPU
+    std::cerr << "[gpu] Loading context to GPU..." << std::endl;
+    gpu_cc->LoadContext(server_kp.publicKey);
     std::cerr << "[gpu] Context loaded to GPU" << std::endl;
+
+    // Store server's keypair for later use
+    g_server_kp = server_kp;
 
     return gpu_cc;
 }
@@ -258,7 +205,7 @@ Ciphertext<DCRTPoly> logistic_eval(
     }
 
     std::cerr << "[gpu] Creating FIDESlib GPU context..." << std::endl;
-    auto gpu_cc = create_gpu_context();
+    auto gpu_cc = create_gpu_context(cc);
 
     std::cerr << "[gpu] Converting " << inputs.size() << " inputs to GPU..." << std::endl;
     std::vector<fideslib::Ciphertext<fideslib::DCRTPoly>> gpu_inputs;

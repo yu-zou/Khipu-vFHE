@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -51,7 +52,7 @@ public:
     }
 
     std::vector<uint8_t> read_blob() {
-        uint32_t n = read_u32_be();
+        uint8_t len_bytes[8]; std::memcpy(len_bytes, buf_.data()+pos_, 8); pos_+=8; uint64_t n=0; for(int i=0;i<8;i++){n=(n<<8)|len_bytes[i];}
         const uint8_t* p = read(n);
         return std::vector<uint8_t>(p, p + n);
     }
@@ -81,7 +82,7 @@ public:
     }
 
     void write_blob(const uint8_t* data, size_t n) {
-        write_u32_be(static_cast<uint32_t>(n));
+        uint64_t n64 = n; uint8_t len_bytes[8]; for(int i=7;i>=0;i--){len_bytes[i]=n64&0xFF;n64>>=8;} buf_.insert(buf_.end(), len_bytes, len_bytes+8);
         buf_.insert(buf_.end(), data, data + n);
     }
 
@@ -122,18 +123,49 @@ void handle_client(int client_fd) {
 
     std::vector<uint8_t> nonce;
     std::vector<std::vector<uint8_t>> eval_key_blobs;
+    Hash32 eval_key_hash{};
     std::vector<uint8_t> public_key_blob;
     std::vector<std::vector<uint8_t>> input_ct_blobs;
     std::string workload_id;
     try {
         BufReader r(req);
         nonce = r.read_blob();
-        uint32_t num_keys = r.read_u32_be();
-        eval_key_blobs.reserve(num_keys);
-        for (uint32_t i = 0; i < num_keys; ++i) {
-            eval_key_blobs.push_back(r.read_blob());
-        }
         public_key_blob = r.read_blob(); // public key
+        std::string eval_keys_path = r.read_string(); // path to eval keys file
+        // Read eval keys from file and compute hash
+        {
+            // First, read entire file and compute hash (matches client-side hash)
+            std::ifstream hash_ifs(eval_keys_path, std::ios::binary | std::ios::ate);
+            size_t file_size = hash_ifs.tellg();
+            hash_ifs.seekg(0);
+            hash_ifs.seekg(4); // skip 4-byte count header
+            std::vector<uint8_t> all_data(file_size - 4);
+            hash_ifs.read(reinterpret_cast<char*>(all_data.data()), file_size - 4);
+            hash_ifs.close();
+            eval_key_hash = blake3_hash(all_data);
+            all_data.clear(); // free memory
+            all_data.shrink_to_fit();
+
+            // Now parse the eval key blobs
+            std::ifstream ifs(eval_keys_path, std::ios::binary);
+            if (!ifs.is_open()) throw std::runtime_error("cannot open eval keys file: " + eval_keys_path);
+            uint32_t num_keys_net = 0;
+            ifs.read(reinterpret_cast<char*>(&num_keys_net), 4);
+            uint32_t num_keys = ntohl(num_keys_net);
+            eval_key_blobs.reserve(num_keys);
+            for (uint32_t i = 0; i < num_keys; ++i) {
+                uint8_t len_bytes[8];
+                ifs.read(reinterpret_cast<char*>(len_bytes), 8);
+                uint64_t sz = 0;
+                for (int j = 0; j < 8; j++) { sz = (sz << 8) | len_bytes[j]; }
+                std::vector<uint8_t> blob(sz);
+                ifs.read(reinterpret_cast<char*>(blob.data()), sz);
+                eval_key_blobs.push_back(std::move(blob));
+            }
+            ifs.close();
+            std::cerr << "[server] Read " << num_keys << " eval key blobs from " << eval_keys_path << std::endl;
+            std::remove(eval_keys_path.c_str());
+        }
         uint32_t num_cts = r.read_u32_be();
         input_ct_blobs.reserve(num_cts);
         for (uint32_t i = 0; i < num_cts; ++i) {
@@ -279,7 +311,7 @@ void handle_client(int client_fd) {
 
     // Generate transcript (without timings) and compute hash.
     auto t_transcript_start = clock::now();
-    Transcript transcript = generate_transcript(nonce, eval_key_blobs, input_ct_blobs,
+    Transcript transcript = generate_transcript(nonce, eval_key_hash, input_ct_blobs,
                                                 output_ct_bytes);
     auto t_transcript_end = clock::now();
 

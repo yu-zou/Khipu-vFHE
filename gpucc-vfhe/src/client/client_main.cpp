@@ -42,7 +42,7 @@ public:
                (uint32_t(p[2]) << 8) | uint32_t(p[3]);
     }
     std::vector<uint8_t> read_blob() {
-        uint32_t n = read_u32_be();
+        uint8_t len_bytes[8]; std::memcpy(len_bytes, buf_.data()+pos_, 8); pos_+=8; uint64_t n=0; for(int i=0;i<8;i++){n=(n<<8)|len_bytes[i];}
         const uint8_t* p = read(n);
         return std::vector<uint8_t>(p, p + n);
     }
@@ -64,7 +64,7 @@ public:
         buf_.insert(buf_.end(), b, b + 4);
     }
     void write_blob(const uint8_t* d, size_t n) {
-        write_u32_be(static_cast<uint32_t>(n));
+        uint64_t n64 = n; uint8_t len_bytes[8]; for(int i=7;i>=0;i--){len_bytes[i]=n64&0xFF;n64>>=8;} buf_.insert(buf_.end(), len_bytes, len_bytes+8);
         buf_.insert(buf_.end(), d, d + n);
     }
     void write_blob(const std::vector<uint8_t>& v) { write_blob(v.data(), v.size()); }
@@ -212,43 +212,11 @@ std::vector<Ciphertext<DCRTPoly>> gen_logreg_inputs(
     return cts;
 }
 
-std::vector<std::vector<uint8_t>> serialize_all_eval_keys(
-    const CryptoContext<DCRTPoly>& cc) {
-    std::vector<std::vector<uint8_t>> blobs;
-    {
-        std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
-        }
-    }
-    {
-        std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
-        }
-    }
-    {
-        std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
-        }
-    }
-    return blobs;
-}
+#include "common/hashing.h"
 
-Hash32 hash_concatenated(const std::vector<std::vector<uint8_t>>& parts) {
+// hash_concatenated: concatenate all blobs and hash (for transcript)
+[[maybe_unused]]
+static Hash32 hash_concatenated(const std::vector<std::vector<uint8_t>>& parts) {
     std::vector<uint8_t> buf;
     size_t total = 0;
     for (const auto& p : parts) total += p.size();
@@ -256,6 +224,95 @@ Hash32 hash_concatenated(const std::vector<std::vector<uint8_t>>& parts) {
     for (const auto& p : parts) buf.insert(buf.end(), p.begin(), p.end());
     return blake3_hash(buf);
 }
+
+// Stream-based eval key serialization to file
+// Each key type is serialized to a temp file, hashed, then appended to main file.
+// This avoids holding all 23.8 GB in RAM simultaneously.
+struct EvalKeysFileResult {
+    std::string path;
+    Hash32 combined_hash;  // hash of all blob data concatenated
+    size_t total_size;
+};
+
+static EvalKeysFileResult serialize_eval_keys_to_file(
+    const CryptoContext<DCRTPoly>& cc) {
+    EvalKeysFileResult result;
+    result.path = "/tmp/eval_keys_" + std::to_string(getpid()) + ".bin";
+    result.total_size = 0;
+
+    std::ofstream ofs(result.path, std::ios::binary);
+    uint32_t num_keys = 3;
+    uint32_t num_keys_be = htonl(num_keys);
+    ofs.write(reinterpret_cast<const char*>(&num_keys_be), 4);
+
+    // Serialize each key type
+    auto serialize_one = [&](const char* name, std::ostream& os) -> bool {
+        // Use the overload without cc parameter (serializes ALL keys in the global map)
+        if (std::string(name) == "EvalMultKey")
+            return CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(os, SerType::BINARY);
+        else if (std::string(name) == "EvalSumKey")
+            return CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(os, SerType::BINARY);
+        else
+            return CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(os, SerType::BINARY);
+    };
+
+    auto write_key_type = [&](const char* name) {
+        std::string tmp_path = result.path + ".tmp";
+        {
+            std::ofstream tmp_ofs(tmp_path, std::ios::binary);
+            bool ok = serialize_one(name, tmp_ofs);
+            tmp_ofs.close();
+            if (!ok) {
+                std::cerr << "[client] WARNING: " << name << " serialization returned false" << std::endl;
+            }
+        }
+        std::ifstream size_ifs(tmp_path, std::ios::binary | std::ios::ate);
+        size_t sz = size_ifs.tellg();
+        size_ifs.close();
+        std::cerr << "[client] " << name << ": " << sz / (1024*1024) << " MB" << std::endl;
+
+        // Read blob, hash it, write to main file
+        std::vector<uint8_t> blob(sz);
+        {
+            std::ifstream data_ifs(tmp_path, std::ios::binary);
+            data_ifs.read(reinterpret_cast<char*>(blob.data()), sz);
+        }
+        std::remove(tmp_path.c_str());
+
+        // Write length + data
+        uint64_t sz64 = sz;
+        uint8_t len_bytes[8];
+        for (int i = 7; i >= 0; i--) { len_bytes[i] = sz64 & 0xFF; sz64 >>= 8; }
+        ofs.write(reinterpret_cast<const char*>(len_bytes), 8);
+        ofs.write(reinterpret_cast<const char*>(blob.data()), sz);
+        result.total_size += sz;
+    };
+
+    write_key_type("EvalMultKey");
+    write_key_type("EvalSumKey");
+    write_key_type("EvalAutoKey");
+
+    ofs.close();
+
+    // Compute combined hash by re-reading the file
+    {
+        std::ifstream ifs(result.path, std::ios::binary | std::ios::ate);
+        size_t file_size = ifs.tellg();
+        ifs.seekg(0);
+        // Skip the 4-byte count header
+        ifs.seekg(4);
+        // Hash all blob data (length prefixes + data)
+        std::vector<uint8_t> all_data(file_size - 4);
+        ifs.read(reinterpret_cast<char*>(all_data.data()), file_size - 4);
+        result.combined_hash = blake3_hash(all_data);
+    }
+
+    std::cerr << "[client] Total eval keys written to file: "
+              << result.total_size / (1024*1024) << " MB" << std::endl;
+    return result;
+}
+
+
 
 void print_usage(const char* argv0) {
     std::cerr << "Usage: " << argv0
@@ -316,7 +373,9 @@ int main(int argc, char** argv) {
 
         std::vector<uint8_t> nonce = random_nonce(16);
 
-        std::vector<std::vector<uint8_t>> eval_keys = serialize_all_eval_keys(cc);
+        // Serialize eval keys directly to file (avoids 23.8 GB in-memory buffer)
+        auto eval_keys_result = serialize_eval_keys_to_file(cc);
+        std::string eval_keys_path = eval_keys_result.path;
 
         // Serialize the public key (needed by FIDESlib GPU on server side)
         std::string pk_serialized;
@@ -370,10 +429,10 @@ int main(int argc, char** argv) {
         }
 
         BufWriter w;
+        // Send small payload over TCP: nonce + pk + eval_keys_path + ciphertexts + workload_id
         w.write_blob(nonce);
-        w.write_u32_be(static_cast<uint32_t>(eval_keys.size()));
-        for (const auto& k : eval_keys) w.write_blob(k);
-        w.write_blob(std::vector<uint8_t>(pk_serialized.begin(), pk_serialized.end())); // public key
+        w.write_blob(std::vector<uint8_t>(pk_serialized.begin(), pk_serialized.end()));
+        w.write_string(eval_keys_path);
         w.write_u32_be(static_cast<uint32_t>(input_ct_blobs.size()));
         for (const auto& c : input_ct_blobs) w.write_blob(c);
         w.write_string(workload_id);
@@ -401,7 +460,9 @@ int main(int argc, char** argv) {
 
         Transcript transcript = Transcript::from_json(transcript_json);
 
-        Hash32 expected_eval_key_hash = hash_concatenated(eval_keys);
+        // Compute eval key hash from the file content
+        // Server computes the same hash from the deserialized eval key blobs
+        Hash32 expected_eval_key_hash = eval_keys_result.combined_hash;
         std::vector<Hash32> expected_input_ct_hashes;
         expected_input_ct_hashes.reserve(input_ct_blobs.size());
         for (const auto& cb : input_ct_blobs) {

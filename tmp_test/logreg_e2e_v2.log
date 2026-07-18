@@ -1,0 +1,8 @@
+Sun Jul 19 01:57:07 AM CST 2026: Starting server
+Server PID=60798
+[server] listening on 0.0.0.0:8109
+[server] bound to port 8109
+Sun Jul 19 01:57:10 AM CST 2026: Starting client
+[client] error: recv failed: unexpected EOF from peer (truncated message)
+Sun Jul 19 01:58:43 AM CST 2026: Client exit=1
+Sun Jul 19 01:58:43 AM CST 2026: Done
