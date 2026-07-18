@@ -33,4 +33,8 @@ struct Register {
     }
 };
 
+// Set the client's public key for FIDESlib GPU context initialization.
+// Called by server_main after deserializing the client's public key.
+void set_client_public_key(lbcrypto::PublicKey<lbcrypto::DCRTPoly> pk);
+
 }  // namespace tee

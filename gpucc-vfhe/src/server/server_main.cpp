@@ -15,6 +15,7 @@
 #include "common/h100_evidence_adapter.h"
 #include "common/serialization.h"
 #include "common/tcp_transport.h"
+#include "openfhe/core/utils/serial.h"
 #include "openfhe.h"
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
@@ -121,6 +122,7 @@ void handle_client(int client_fd) {
 
     std::vector<uint8_t> nonce;
     std::vector<std::vector<uint8_t>> eval_key_blobs;
+    std::vector<uint8_t> public_key_blob;
     std::vector<std::vector<uint8_t>> input_ct_blobs;
     std::string workload_id;
     try {
@@ -131,6 +133,7 @@ void handle_client(int client_fd) {
         for (uint32_t i = 0; i < num_keys; ++i) {
             eval_key_blobs.push_back(r.read_blob());
         }
+        public_key_blob = r.read_blob(); // public key
         uint32_t num_cts = r.read_u32_be();
         input_ct_blobs.reserve(num_cts);
         for (uint32_t i = 0; i < num_cts; ++i) {
@@ -209,6 +212,23 @@ void handle_client(int client_fd) {
         std::cerr << "[server] eval key deserialization failed: " << e.what() << std::endl;
         try {
             auto resp = build_error_response(std::string("bad eval key: ") + e.what());
+            send_message(client_fd, resp);
+        } catch (...) {}
+        return;
+    }
+
+    // Deserialize the client's public key
+    lbcrypto::PublicKey<lbcrypto::DCRTPoly> client_pk;
+    try {
+        std::string pk_str(public_key_blob.begin(), public_key_blob.end());
+        std::istringstream iss(pk_str, std::ios::binary);
+        lbcrypto::Serial::Deserialize(client_pk, iss, lbcrypto::SerType::BINARY);
+        // Store for FIDESlib GPU context
+        tee::set_client_public_key(client_pk);
+    } catch (const std::exception& e) {
+        std::cerr << "[server] public key deserialization failed: " << e.what() << std::endl;
+        try {
+            auto resp = build_error_response(std::string("bad public key: ") + e.what());
             send_message(client_fd, resp);
         } catch (...) {}
         return;

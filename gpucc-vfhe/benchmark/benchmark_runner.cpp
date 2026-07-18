@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "openfhe/core/utils/serial.h"
+
 #include "client/verifier.h"
 #include "common/attestation.h"
 #include "common/hashing.h"
@@ -360,10 +362,19 @@ int main(int argc, char** argv) {
                 }
             }
 
+            // Serialize public key
+            std::string pk_serialized;
+            {
+                std::ostringstream oss(std::ios::binary);
+                lbcrypto::Serial::Serialize(kp.publicKey, oss, lbcrypto::SerType::BINARY);
+                pk_serialized = oss.str();
+            }
+
             BufWriter w;
             w.write_blob(nonce);
             w.write_u32_be(static_cast<uint32_t>(eval_keys.size()));
             for (const auto& k : eval_keys) w.write_blob(k);
+            w.write_blob(std::vector<uint8_t>(pk_serialized.begin(), pk_serialized.end()));
             w.write_u32_be(static_cast<uint32_t>(input_ct_blobs.size()));
             for (const auto& c : input_ct_blobs) w.write_blob(c);
             w.write_string(spec.id);

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(gpucc-vfhe VERSION 0.1.0 LANGUAGES CXX C ASM)
+project(gpucc-vfhe VERSION 0.1.0 LANGUAGES CXX C ASM CUDA)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -74,14 +74,14 @@ target_include_directories(tee_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/includ
 target_link_libraries(tee_server PRIVATE
   -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation tcp_transport tee_common OPENFHEpke OPENFHEcore OPENFHEbinfhe
-  /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda pthread)
+  -Wl,--start-group /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda pthread -Wl,--end-group)
 
 add_executable(tee_client src/client/client_main.cpp)
 target_include_directories(tee_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(tee_client PRIVATE
   tee_verifier -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive
   tee_attestation tcp_transport tee_common OPENFHEpke OPENFHEcore OPENFHEbinfhe
-  /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda curl crypto pthread)
+  -Wl,--start-group /usr/local/fideslib/lib64/fideslib.a tdx_attest nvat cudart cublas cufft curand cuda curl crypto pthread -Wl,--end-group)
 
 add_subdirectory(tests)
 add_subdirectory(benchmark)

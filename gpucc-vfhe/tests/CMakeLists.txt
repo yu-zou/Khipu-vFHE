@@ -9,7 +9,7 @@ target_link_libraries(test_verifier PRIVATE tee_verifier tee_attestation tee_com
 add_test(NAME test_verifier COMMAND test_verifier)
 
 add_executable(test_workloads test_workloads.cpp)
-target_link_libraries(test_workloads PRIVATE -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive tee_common GTest::gtest_main OPENFHEpke OPENFHEcore OPENFHEbinfhe pthread)
+target_link_libraries(test_workloads PRIVATE -Wl,--whole-archive tee_workloads -Wl,--no-whole-archive tee_common GTest::gtest_main OPENFHEpke OPENFHEcore OPENFHEbinfhe -Wl,--start-group /usr/local/fideslib/lib64/fideslib.a cudart cublas cufft curand cuda -Wl,--end-group pthread)
 add_test(NAME test_workloads COMMAND test_workloads)
 
 add_executable(test_transcript test_transcript.cpp)
