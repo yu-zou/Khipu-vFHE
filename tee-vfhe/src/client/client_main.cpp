@@ -427,11 +427,20 @@ int main(int argc, char** argv) {
             std::string(output_ct_bytes.begin(), output_ct_bytes.end()));
         Plaintext pt_out;
         cc->Decrypt(kp.secretKey, output_ct, &pt_out);
-        pt_out->SetLength(32);
+        pt_out->SetLength(256);
         auto dec = pt_out->GetCKKSPackedValue();
 
-        std::cout << "output[0..7] =";
-        for (int i = 0; i < 8 && i < static_cast<int>(dec.size()); ++i) {
+        // Trained weights occupy the first 196 slots (one per MNIST feature).
+        // Slots 0-7 are always-black border pixels (~0); report max magnitude
+        // over all 196 features plus a feature-rich sample (same as Prototype C).
+        double max_w = 0.0;
+        int argmax = 0;
+        for (int i = 0; i < 196 && i < static_cast<int>(dec.size()); ++i) {
+            if (std::abs(dec[i].real()) > max_w) { max_w = std::abs(dec[i].real()); argmax = i; }
+        }
+        std::cout << "trained weights: max|w|=" << max_w << " at feature " << argmax
+                  << "; sample w[100..103] =";
+        for (int i = 100; i < 104 && i < static_cast<int>(dec.size()); ++i) {
             std::cout << " " << dec[i].real();
         }
         std::cout << std::endl;

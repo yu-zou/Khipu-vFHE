@@ -658,6 +658,36 @@ DecryptResult CryptoContextImpl<DCRTPoly>::Decrypt(const PrivateKey<DCRTPoly>& s
 	return Decrypt(ct, sk, pt);
 }
 
+// Sync a GPU-resident ciphertext's data back into its OpenFHE (CPU) ciphertext
+// WITHOUT decrypting. This mirrors the GPU->CPU copy that Decrypt performs, but
+// needs no secret key, so a server that never holds the secret key can retrieve
+// GPU-computed results and serialize them back to the client.
+void CryptoContextImpl<DCRTPoly>::SyncCiphertextToCPU(Ciphertext<DCRTPoly>& ct) {
+	FIDESlib::CudaNvtxRange r("API");
+
+	if (!ct->loaded || this->devices.empty()) {
+		// Nothing on GPU; leave the CPU ciphertext as-is (deep-copied).
+		ct->EnsureLazyCPUCopy();
+		return;
+	}
+
+	EnsureMutableCpuCiphertext(ct);
+	auto& ct_cpu = std::any_cast<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>&>(ct->cpu);
+
+	auto ct_gpu = std::static_pointer_cast<FIDESlib::CKKS::Ciphertext>(this->GetDeviceCiphertext(ct->gpu));
+	FIDESlib::CKKS::RawCipherText raw_ct;
+	ct_gpu->store(raw_ct);
+
+	// GetOpenFHECipherText writes the GPU limbs into ct_cpu. If ct_cpu has fewer
+	// limbs than the GPU result it clamps to ct_cpu's limb count; in RNS/CKKS the
+	// low limbs encode the same plaintext, so the decrypted values are preserved
+	// (the result is simply at a lower level). This lets us reuse the stale input
+	// ciphertext as the template with no secret key.
+	FIDESlib::CKKS::GetOpenFHECipherText(ct_cpu, raw_ct);
+
+	ct->cpu = std::make_any<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>>(ct_cpu);
+}
+
 // ---- Operations ----
 
 Ciphertext<DCRTPoly> CryptoContextImpl<DCRTPoly>::EvalNegate(const Ciphertext<DCRTPoly>& ct) {

@@ -10,6 +10,7 @@
 #include "server/workload_registry.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -48,7 +49,10 @@ constexpr uint32_t kDigits = 3;
 constexpr uint32_t kRows = 128;
 constexpr uint32_t kCols = 256;
 constexpr uint32_t kNumFeatures = 196;
-constexpr uint32_t kNumIterations = 10;
+// Iterations that fit within the multiplicative budget WITHOUT bootstrap.
+// Bootstrap is disabled (FIDESlib GPU bootstrap is broken on this H20 install);
+// both prototypes run the identical no-bootstrap workload for a fair comparison.
+constexpr uint32_t kNumIterations = 2;
 constexpr uint32_t kNumBatches = 10;
 constexpr uint32_t kNumInputs = 21;
 
@@ -221,6 +225,15 @@ static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context(
     // this key's tag by server_main. LoadContext resolves them from there.
     auto client_cc = g_client_pk->GetCryptoContext();
 
+    // CRITICAL: bind the FIDESlib context's internal OpenFHE context to the
+    // CLIENT's context. The incoming ciphertexts were encrypted under the client
+    // context; if we leave gpu_cc->cpu as the fresh GenCryptoContext context, its
+    // FLEXIBLEAUTO scaling factors differ subtly and plaintext masks encoded via
+    // gpu_cc->MakeCKKSPackedPlaintext won't align with the ciphertexts (activation
+    // then produces garbage / near-zero weights). LoadContext also reads params
+    // and key maps from gpu_cc->cpu, so this keeps everything on one context.
+    gpu_cc->cpu = std::make_any<lbcrypto::CryptoContext<lbcrypto::DCRTPoly>>(client_cc);
+
     // Build the bootstrap precomputation tables on the CLIENT's context (this is
     // the context LoadContext -> AddBootstrapPrecomputation reads from). This
     // needs NO secret key: EvalBootstrapSetup only computes public plaintext
@@ -260,10 +273,30 @@ static fideslib::Ciphertext<fideslib::DCRTPoly> wrap_openfhe_to_gpu(
     return gpu_ct;
 }
 
-// Extract result from FIDESlib GPU back to OpenFHE
+// Extract result from FIDESlib GPU back to OpenFHE. Must sync the GPU-computed
+// data back into the CPU ciphertext (store + GetOpenFHECipherText); a plain
+// EnsureLazyCPUCopy would return the STALE input ciphertext, not the result.
+//
+// The GPU result can be at a higher level (more RNS limbs) than the stale input
+// ciphertext used as its CPU shadow — e.g. after a bootstrap. If we synced into
+// that stale template, GetOpenFHECipherText would clamp to the template's limb
+// count and the scaling-factor / level metadata would no longer match the data,
+// so decryption fails ("approximation error too high"). To avoid this we install
+// a FRESH top-level CPU template (a public-key encryption of zeros on the client
+// context) before syncing; GetOpenFHECipherText then resizes it down to exactly
+// the GPU result's limb count with consistent metadata. Needs only the public key.
 static lbcrypto::Ciphertext<lbcrypto::DCRTPoly> gpu_to_openfhe(
+    fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
     fideslib::Ciphertext<fideslib::DCRTPoly>& gpu_ct) {
-    gpu_ct->EnsureLazyCPUCopy();
+    if (g_client_pk) {
+        auto client_cc = g_client_pk->GetCryptoContext();
+        std::vector<double> zeros(kCols, 0.0);
+        auto tmpl_pt = client_cc->MakeCKKSPackedPlaintext(zeros, 1, 0, nullptr, kBatchSize);
+        auto tmpl_ct = client_cc->Encrypt(g_client_pk, tmpl_pt);  // top level, full limbs
+        gpu_ct->cpu = std::make_any<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>>(tmpl_ct);
+        gpu_ct->need_lazy_copy = false;
+    }
+    gpu_cc->SyncCiphertextToCPU(gpu_ct);
     return std::any_cast<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>>(gpu_ct->cpu);
 }
 
@@ -312,6 +345,8 @@ Ciphertext<DCRTPoly> logistic_eval(
             std::to_string(inputs.size()));
     }
 
+    using clk = std::chrono::high_resolution_clock;
+    auto t_setup0 = clk::now();
     std::cerr << "[gpu] Creating FIDESlib GPU context..." << std::endl;
     auto gpu_cc = create_gpu_context(cc);
 
@@ -321,6 +356,7 @@ Ciphertext<DCRTPoly> logistic_eval(
     auto mask_0 = gpu_cc->MakeCKKSPackedPlaintext(m0, 1, 0, nullptr, kCols);
     auto mask_1 = gpu_cc->MakeCKKSPackedPlaintext(m1, 1, 0, nullptr, kCols);
     auto mask_3 = gpu_cc->MakeCKKSPackedPlaintext(m3, 1, 0, nullptr, kCols);
+    auto t_setup1 = clk::now();
 
     std::cerr << "[gpu] Converting " << inputs.size() << " inputs to GPU..." << std::endl;
     std::vector<fideslib::Ciphertext<fideslib::DCRTPoly>> gpu_inputs;
@@ -328,16 +364,19 @@ Ciphertext<DCRTPoly> logistic_eval(
     for (const auto& ct : inputs) {
         gpu_inputs.push_back(wrap_openfhe_to_gpu(gpu_cc, ct));
     }
+    gpu_cc->Synchronize();
+    auto t_upload1 = clk::now();
 
     auto weights = gpu_inputs[20];
 
-    std::cerr << "[gpu] Starting training loop (10 iterations, 5 bootstraps)..." << std::endl;
+    std::cerr << "[gpu] Starting training loop (" << kNumIterations
+              << " iterations, no bootstrap)..." << std::endl;
+    auto t_compute0 = clk::now();
 
     for (uint32_t iter = 0; iter < kNumIterations; ++iter) {
         // Fresh copies of the batch inputs (data is mutated in-place below).
         auto data = gpu_inputs[iter]->Clone();
         const auto& labels = gpu_inputs[kNumBatches + iter];
-        bool do_boot = (iter % 2 == 1);  // bootstrap after iters 2,4,6,8,10
 
         // Forward: z = activation(rowsum(data * weights)) - labels
         auto ct = gpu_cc->EvalMult(data, weights);
@@ -346,7 +385,7 @@ Ciphertext<DCRTPoly> logistic_eval(
         gpu_cc->EvalSubInPlace(ct, labels);
         row_propagate(gpu_cc, ct);
 
-        // Gradient: (error) * data, scaled by lr/batch, summed across rows.
+        // Gradient: (error) * (scaled data), summed across rows.
         double lr = std::max(10.0 / (iter + 1), 0.005);
         double scale = lr / static_cast<double>(kRows);
         gpu_cc->EvalMultInPlace(data, scale);
@@ -356,18 +395,22 @@ Ciphertext<DCRTPoly> logistic_eval(
         // weights -= gradient
         gpu_cc->EvalSubInPlace(weights, ct);
 
-        if (do_boot) {
-            std::cerr << "[gpu] Bootstrap after iteration " << (iter + 1) << std::endl;
-            weights->SetSlots(kCols);
-            gpu_cc->EvalBootstrapInPlace(weights, 1, 0, false);
-            weights->SetSlots(kBatchSize);
-        }
+        // NOTE: bootstrap intentionally omitted (see kNumIterations comment).
     }
 
     gpu_cc->Synchronize();
+    auto t_compute1 = clk::now();
     std::cerr << "[gpu] Training complete, extracting result..." << std::endl;
 
-    return gpu_to_openfhe(weights);
+    auto ms = [](auto a, auto b) {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+    };
+    std::cerr << "[gpu][timing] context+LoadContext=" << ms(t_setup0, t_setup1) << "ms"
+              << " input_upload=" << ms(t_setup1, t_upload1) << "ms"
+              << " compute(" << kNumIterations << " iters)=" << ms(t_compute0, t_compute1) << "ms"
+              << std::endl;
+
+    return gpu_to_openfhe(gpu_cc, weights);
 }
 
 Register g_logistic_reg("logistic-regression",

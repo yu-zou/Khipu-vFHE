@@ -110,6 +110,10 @@ template <> class CryptoContextImpl<DCRTPoly> {
 	DecryptResult Decrypt(Ciphertext<DCRTPoly>& ct, const PrivateKey<DCRTPoly>& sk, Plaintext* pt);
 	DecryptResult Decrypt(const PrivateKey<DCRTPoly>& sk, Ciphertext<DCRTPoly>& ct, Plaintext* pt);
 
+	// Sync a GPU-resident ciphertext back to its OpenFHE (CPU) representation
+	// without decrypting (no secret key required). Updates ct->cpu in place.
+	void SyncCiphertextToCPU(Ciphertext<DCRTPoly>& ct);
+
 	// ---- Operations ----
 
 	Ciphertext<DCRTPoly> EvalNegate(const Ciphertext<DCRTPoly>& ct);
