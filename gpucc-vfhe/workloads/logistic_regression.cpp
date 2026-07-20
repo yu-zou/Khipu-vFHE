@@ -29,9 +29,9 @@ using namespace lbcrypto;
 
 namespace tee {
 
-// Client's public key (set by server_main before calling eval)
+// Client's public key (set by server_main before calling eval). The server
+// holds NO secret key; all keys are generated client-side.
 static PublicKey<DCRTPoly> g_client_pk = nullptr;
-static fideslib::KeyPair<fideslib::DCRTPoly> g_server_kp;
 
 void set_client_public_key(PublicKey<DCRTPoly> pk) {
     g_client_pk = pk;
@@ -56,6 +56,12 @@ constexpr uint32_t kBootLevelBudgetEnc = 2;
 constexpr uint32_t kBootLevelBudgetDec = 2;
 constexpr uint32_t kBootDim1First = 16;
 constexpr uint32_t kBootDim1Second = 16;
+// Active bootstrap slots. Kept at the full batch size so the eval loop can
+// bootstrap the weights ciphertext directly (no SetSlots dance). Must match the
+// client's EvalBootstrapKeyGen. NOTE: a future optimization is to bootstrap only
+// kCols slots (as the FIDESlib logreg reference does) to shrink the eval-key set
+// dramatically, but that requires the SetSlots dance in the eval loop.
+constexpr uint32_t kBootSlots = kBatchSize;
 
 // Create OpenFHE context
 CryptoContext<DCRTPoly> make_logistic_context() {
@@ -79,23 +85,60 @@ CryptoContext<DCRTPoly> make_logistic_context() {
     return cc;
 }
 
+static std::vector<int32_t> logreg_rotation_indices();  // defined below
+
+// Client-side key generation. Runs with the client's secret key; produces the
+// exact rotation-key set and bootstrap keys the GPU server context will later
+// resolve by KeyTag. Must stay in sync with logreg_rotation_indices() and
+// kBootSlots used in create_gpu_context().
+//
+// IMPORTANT: EvalRotateKeyGen must come AFTER EvalBootstrapKeyGen. The FIDESlib
+// GenBootstrapKeys uses InsertEvalAutomorphismKey which replaces the entire
+// automorphism key map for this key tag. If we call EvalRotateKeyGen first, its
+// keys get overwritten. Calling it last ensures our rotation keys persist
+// (EvalRotateKeyGen merges into the existing map).
 void logistic_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp) {
     cc->EvalMultKeyGen(kp.secretKey);
-    std::vector<int32_t> rotations;
-    for (uint32_t j = 1; j < kCols; j <<= 1) rotations.push_back(j);
-    for (uint32_t j = 1; j < kRows; j <<= 1) rotations.push_back(j * kCols);
-    cc->EvalRotateKeyGen(kp.secretKey, rotations);
     std::vector<uint32_t> lb = {kBootLevelBudgetEnc, kBootLevelBudgetDec};
     std::vector<uint32_t> d1 = {kBootDim1First, kBootDim1Second};
-    cc->EvalBootstrapSetup(lb, d1, kBatchSize);
-    cc->EvalBootstrapKeyGen(kp.secretKey, kBatchSize);
+    cc->EvalBootstrapSetup(lb, d1, kBootSlots);
+    cc->EvalBootstrapKeyGen(kp.secretKey, kBootSlots);
+    // Add logreg rotation keys AFTER bootstrap keygen so they aren't overwritten.
+    cc->EvalRotateKeyGen(kp.secretKey, logreg_rotation_indices());
 }
 
-// Create FIDESlib GPU context with server's own keypair
-// The server generates its own keypair and loads to GPU.
-// Client ciphertexts are converted to use the server's keypair via key-switching.
+// The rotation indices required by the logreg algorithm. These correspond to
+// the AccumulateSumInPlace strides used in the eval loop:
+//   row accumulate: powers of two 1,2,...,kCols/2   (stride 1, up to kCols)
+//   col accumulate: kCols,2*kCols,... up to kRows*kCols/2
+// EvalBootstrapKeyGen generates its own bootstrap-internal rotation keys, so
+// they are not listed here. Must match the client's EvalRotateKeyGen.
+static std::vector<int32_t> logreg_rotation_indices() {
+    std::vector<int32_t> rotations;
+    for (uint32_t j = 1; j < kCols; j <<= 1) {
+        rotations.push_back(static_cast<int32_t>(j));
+    }
+    for (uint32_t j = 1; j < kRows; j <<= 1) {
+        rotations.push_back(static_cast<int32_t>(j * kCols));
+    }
+    return rotations;
+}
+
+// Create the FIDESlib GPU context bound to the CLIENT's keypair.
+//
+// The client generates ALL keys (mult, rotation, bootstrap) with its own secret
+// key and sends the public key + serialized eval/automorphism keys to the server.
+// The server never holds a secret key. FIDESlib's LoadContext reads the client's
+// relinearization/rotation/bootstrap keys from the (static, global) OpenFHE key
+// maps keyed by the client public key's KeyTag, so incoming client ciphertexts
+// (which carry that same KeyTag) resolve correctly during GPU EvalMult/rotations.
 static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context(
-    CryptoContext<DCRTPoly> server_cc) {
+    CryptoContext<DCRTPoly> /*server_cc*/) {
+
+    if (!g_client_pk) {
+        throw std::runtime_error(
+            "create_gpu_context: client public key not set (call set_client_public_key first)");
+    }
 
     fideslib::CCParams<fideslib::CryptoContextCKKSRNS> params;
     params.SetRingDim(kRingDim);
@@ -117,39 +160,35 @@ static fideslib::CryptoContext<fideslib::DCRTPoly> create_gpu_context(
     gpu_cc->Enable(fideslib::ADVANCEDSHE);
     gpu_cc->Enable(fideslib::FHE);
 
-    // Generate server's own keypair
-    auto server_kp = gpu_cc->KeyGen();
-    gpu_cc->EvalMultKeyGen(server_kp.secretKey);
+    // The client's public key carries its own (deserialized) OpenFHE crypto
+    // context. The client's eval-mult / automorphism (rotation + bootstrap +
+    // conjugation) keys were already deserialized into the global key maps under
+    // this key's tag by server_main. LoadContext resolves them from there.
+    auto client_cc = g_client_pk->GetCryptoContext();
 
-    // Generate rotation keys with the indices needed for logreg
-    std::vector<int32_t> rotations;
-    for (uint32_t j = 1; j < kCols; j <<= 1) {
-        rotations.push_back(j);
-        rotations.push_back(-static_cast<int32_t>(j));
-    }
-    for (uint32_t j = kCols; j < kRows * kCols; j <<= 1) {
-        rotations.push_back(j);
-    }
-    // Special bootstrap rotation indices for ring dim 65536
-    rotations.push_back(32765);
-    rotations.push_back(32756);
-    rotations.push_back(32720);
-    rotations.push_back(32576);
-    gpu_cc->EvalRotateKeyGen(server_kp.secretKey, rotations);
-
-    // Bootstrap setup
+    // Build the bootstrap precomputation tables on the CLIENT's context (this is
+    // the context LoadContext -> AddBootstrapPrecomputation reads from). This
+    // needs NO secret key: EvalBootstrapSetup only computes public plaintext
+    // tables. The matching bootstrap KEYS were generated client-side and arrive
+    // via the serialized automorphism-key blob.
     std::vector<uint32_t> lb = {kBootLevelBudgetEnc, kBootLevelBudgetDec};
     std::vector<uint32_t> d1 = {kBootDim1First, kBootDim1Second};
-    gpu_cc->EvalBootstrapSetup(lb, d1, kBatchSize, 0);
-    gpu_cc->EvalBootstrapKeyGen(server_kp.secretKey, kBatchSize);
+    client_cc->EvalBootstrapSetup(lb, d1, kBootSlots);
 
-    // Load to GPU
-    std::cerr << "[gpu] Loading context to GPU..." << std::endl;
-    gpu_cc->LoadContext(server_kp.publicKey);
+    // Tell the GPU context which rotation keys and bootstrap slots to upload.
+    // These are plain index lists (no secret material); LoadContext then pulls
+    // the actual key-switching keys from the client's key maps by KeyTag.
+    gpu_cc->rotation_indexes = logreg_rotation_indices();
+    gpu_cc->slots_bootstrap = {kBootSlots};
+
+    // Wrap the client's lbcrypto public key into a FIDESlib public key handle.
+    fideslib::PublicKey<fideslib::DCRTPoly> client_pk_gpu =
+        std::make_shared<fideslib::PublicKeyImpl<fideslib::DCRTPoly>>();
+    client_pk_gpu->pimpl = std::make_any<lbcrypto::PublicKey<lbcrypto::DCRTPoly>>(g_client_pk);
+
+    std::cerr << "[gpu] Loading context to GPU (client keypair)..." << std::endl;
+    gpu_cc->LoadContext(client_pk_gpu);
     std::cerr << "[gpu] Context loaded to GPU" << std::endl;
-
-    // Store server's keypair for later use
-    g_server_kp = server_kp;
 
     return gpu_cc;
 }

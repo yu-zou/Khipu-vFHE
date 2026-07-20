@@ -20,6 +20,9 @@
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
 #include "openfhe/pke/scheme/ckksrns/ckksrns-ser.h"
+extern "C" {
+#include "blake3.h"
+}
 #include "server/workload_registry.h"
 
 using namespace tee;
@@ -241,71 +244,72 @@ static EvalKeysFileResult serialize_eval_keys_to_file(
     result.total_size = 0;
 
     std::ofstream ofs(result.path, std::ios::binary);
-    uint32_t num_keys = 3;
+    // Two key blobs: relinearization (mult) key and the full automorphism map
+    // (rotations + bootstrap + conjugation). NOTE: EvalSumKey in OpenFHE is an
+    // ALIAS of the automorphism map, so serializing it separately is redundant
+    // AND its deserializer only restores a filtered subset. We therefore send
+    // exactly two blobs, each tagged with an explicit 1-byte type so the server
+    // uses the correct deserializer (no fragile format-guessing).
+    uint32_t num_keys = 2;
     uint32_t num_keys_be = htonl(num_keys);
     ofs.write(reinterpret_cast<const char*>(&num_keys_be), 4);
 
-    // Serialize each key type
-    auto serialize_one = [&](const char* name, std::ostream& os) -> bool {
-        // Use the overload without cc parameter (serializes ALL keys in the global map)
-        if (std::string(name) == "EvalMultKey")
-            return CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(os, SerType::BINARY);
-        else if (std::string(name) == "EvalSumKey")
-            return CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(os, SerType::BINARY);
-        else
-            return CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(os, SerType::BINARY);
-    };
+    // Explicit blob type tags (1 byte, written before the length prefix).
+    constexpr uint8_t kTypeMult = 1;
+    constexpr uint8_t kTypeAuto = 2;
 
-    auto write_key_type = [&](const char* name) {
-        std::string tmp_path = result.path + ".tmp";
-        {
-            std::ofstream tmp_ofs(tmp_path, std::ios::binary);
-            bool ok = serialize_one(name, tmp_ofs);
-            tmp_ofs.close();
-            if (!ok) {
-                std::cerr << "[client] WARNING: " << name << " serialization returned false" << std::endl;
-            }
+    // Compute hash incrementally using blake3 streaming
+    blake3_hasher hasher;
+    blake3_hasher_init(&hasher);
+
+    auto write_key_type = [&](const char* name, uint8_t type_tag) {
+        std::ostringstream tmp_oss(std::ios::binary);
+        bool ok = (type_tag == kTypeMult)
+            ? CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(tmp_oss, SerType::BINARY)
+            : CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(tmp_oss, SerType::BINARY);
+        if (!ok) {
+            std::cerr << "[client] WARNING: " << name << " serialization returned false" << std::endl;
         }
-        std::ifstream size_ifs(tmp_path, std::ios::binary | std::ios::ate);
-        size_t sz = size_ifs.tellg();
-        size_ifs.close();
+        std::string tmp_str = tmp_oss.str();
+        size_t sz = tmp_str.size();
         std::cerr << "[client] " << name << ": " << sz / (1024*1024) << " MB" << std::endl;
 
-        // Read blob, hash it, write to main file
-        std::vector<uint8_t> blob(sz);
-        {
-            std::ifstream data_ifs(tmp_path, std::ios::binary);
-            data_ifs.read(reinterpret_cast<char*>(blob.data()), sz);
-        }
-        std::remove(tmp_path.c_str());
-
-        // Write length + data
+        // Build length prefix bytes
         uint64_t sz64 = sz;
         uint8_t len_bytes[8];
         for (int i = 7; i >= 0; i--) { len_bytes[i] = sz64 & 0xFF; sz64 >>= 8; }
+
+        // Update hash with type tag + length prefix + data
+        blake3_hasher_update(&hasher, reinterpret_cast<const char*>(&type_tag), 1);
+        blake3_hasher_update(&hasher, reinterpret_cast<const char*>(len_bytes), 8);
+        blake3_hasher_update(&hasher, tmp_str.data(), sz);
+
+        // Write to main file: [type:1][len:8][data]
+        ofs.write(reinterpret_cast<const char*>(&type_tag), 1);
         ofs.write(reinterpret_cast<const char*>(len_bytes), 8);
-        ofs.write(reinterpret_cast<const char*>(blob.data()), sz);
+        ofs.write(tmp_str.data(), sz);
+        // Fail loudly on a short/failed write (e.g. disk full) instead of
+        // silently truncating the key file, which would corrupt the keys the
+        // server deserializes.
+        if (!ofs) {
+            throw std::runtime_error(std::string("failed writing eval key '") + name +
+                "' to " + result.path + " (disk full or I/O error)");
+        }
         result.total_size += sz;
     };
 
-    write_key_type("EvalMultKey");
-    write_key_type("EvalSumKey");
-    write_key_type("EvalAutoKey");
+    write_key_type("EvalMultKey", kTypeMult);
+    write_key_type("EvalAutoKey", kTypeAuto);
 
+    ofs.flush();
     ofs.close();
-
-    // Compute combined hash by re-reading the file
-    {
-        std::ifstream ifs(result.path, std::ios::binary | std::ios::ate);
-        size_t file_size = ifs.tellg();
-        ifs.seekg(0);
-        // Skip the 4-byte count header
-        ifs.seekg(4);
-        // Hash all blob data (length prefixes + data)
-        std::vector<uint8_t> all_data(file_size - 4);
-        ifs.read(reinterpret_cast<char*>(all_data.data()), file_size - 4);
-        result.combined_hash = blake3_hash(all_data);
+    if (!ofs) {
+        throw std::runtime_error("failed to finalize eval key file " + result.path +
+            " (disk full or I/O error)");
     }
+
+    // Finalize hash
+    blake3_hasher_finalize(&hasher, result.combined_hash.data(), BLAKE3_OUT_LEN);
 
     std::cerr << "[client] Total eval keys written to file: "
               << result.total_size / (1024*1024) << " MB" << std::endl;

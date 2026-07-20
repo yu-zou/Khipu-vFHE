@@ -130,8 +130,11 @@ CryptoContextImpl<DCRTPoly>::~CryptoContextImpl() {
 		FIDESlib::CKKS::DeregisterCryptoContextGPU(context_gpu);
 		this->gpu = std::any();
 	}
-	lbcrypto::CryptoContextImpl<lbcrypto::DCRTPolyImpl<bigintdyn::mubintvec<bigintdyn::ubint<unsigned long>>>>::ClearEvalMultKeys();
-	lbcrypto::CryptoContextImpl<lbcrypto::DCRTPolyImpl<bigintdyn::mubintvec<bigintdyn::ubint<unsigned long>>>>::ClearEvalAutomorphismKeys();
+	// NOTE: Do NOT clear the global static key maps here. The destructor of a
+	// temporary/moved-from context (e.g. inside GenCryptoContext) would wipe
+	// eval keys that were deserialized into the global maps by unrelated code.
+	// The original ClearEvalMultKeys/ClearEvalAutomorphismKeys calls have been
+	// removed to fix key-map erasure in the server/client pipeline.
 }
 
 // ---- Enable features ----

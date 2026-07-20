@@ -17,6 +17,9 @@
 #include "common/serialization.h"
 #include "common/tcp_transport.h"
 #include "openfhe/core/utils/serial.h"
+extern "C" {
+#include "blake3.h"
+}
 #include "openfhe.h"
 #include "openfhe/pke/cryptocontext-ser.h"
 #include "openfhe/pke/key/key-ser.h"
@@ -123,6 +126,7 @@ void handle_client(int client_fd) {
 
     std::vector<uint8_t> nonce;
     std::vector<std::vector<uint8_t>> eval_key_blobs;
+    std::vector<uint8_t> eval_key_types;  // parallel: 1=mult, 2=automorphism
     Hash32 eval_key_hash{};
     std::vector<uint8_t> public_key_blob;
     std::vector<std::vector<uint8_t>> input_ct_blobs;
@@ -134,17 +138,22 @@ void handle_client(int client_fd) {
         std::string eval_keys_path = r.read_string(); // path to eval keys file
         // Read eval keys from file and compute hash
         {
-            // First, read entire file and compute hash (matches client-side hash)
-            std::ifstream hash_ifs(eval_keys_path, std::ios::binary | std::ios::ate);
-            size_t file_size = hash_ifs.tellg();
-            hash_ifs.seekg(0);
-            hash_ifs.seekg(4); // skip 4-byte count header
-            std::vector<uint8_t> all_data(file_size - 4);
-            hash_ifs.read(reinterpret_cast<char*>(all_data.data()), file_size - 4);
-            hash_ifs.close();
-            eval_key_hash = blake3_hash(all_data);
-            all_data.clear(); // free memory
-            all_data.shrink_to_fit();
+            // First pass: compute hash of file content (streaming, no large buffer)
+        {
+            std::ifstream hash_ifs(eval_keys_path, std::ios::binary);
+            if (!hash_ifs.is_open()) throw std::runtime_error("cannot open eval keys file for hashing");
+            blake3_hasher hasher;
+            blake3_hasher_init(&hasher);
+            // Skip 4-byte count header
+            uint8_t skip[4];
+            hash_ifs.read(reinterpret_cast<char*>(skip), 4);
+            // Stream hash all remaining data in chunks
+            char chunk[1 << 20]; // 1 MB chunks
+            while (hash_ifs.read(chunk, sizeof(chunk)) || hash_ifs.gcount() > 0) {
+                blake3_hasher_update(&hasher, static_cast<const char*>(chunk), hash_ifs.gcount());
+            }
+            blake3_hasher_finalize(&hasher, reinterpret_cast<uint8_t*>(eval_key_hash.data()), BLAKE3_OUT_LEN);
+        }
 
             // Now parse the eval key blobs
             std::ifstream ifs(eval_keys_path, std::ios::binary);
@@ -153,7 +162,10 @@ void handle_client(int client_fd) {
             ifs.read(reinterpret_cast<char*>(&num_keys_net), 4);
             uint32_t num_keys = ntohl(num_keys_net);
             eval_key_blobs.reserve(num_keys);
+            eval_key_types.reserve(num_keys);
             for (uint32_t i = 0; i < num_keys; ++i) {
+                uint8_t type_tag = 0;
+                ifs.read(reinterpret_cast<char*>(&type_tag), 1);
                 uint8_t len_bytes[8];
                 ifs.read(reinterpret_cast<char*>(len_bytes), 8);
                 uint64_t sz = 0;
@@ -161,6 +173,7 @@ void handle_client(int client_fd) {
                 std::vector<uint8_t> blob(sz);
                 ifs.read(reinterpret_cast<char*>(blob.data()), sz);
                 eval_key_blobs.push_back(std::move(blob));
+                eval_key_types.push_back(type_tag);
             }
             ifs.close();
             std::cerr << "[server] Read " << num_keys << " eval key blobs from " << eval_keys_path << std::endl;
@@ -196,48 +209,45 @@ void handle_client(int client_fd) {
     }
     const Workload& workload = it->second;
 
-    auto t_cc_start = clock::now();
-    auto cc = workload.make_context();
-    auto t_cc_end = clock::now();
+    // Deserialize the client's public key FIRST. Its serialization includes an
+    // OpenFHE CryptoContext that must be active before eval-key deserialization.
+    // We do NOT call workload.make_context() here: that would register a SECOND
+    // context with identical parameters, and OpenFHE's context dedup + key
+    // association then drops most deserialized automorphism keys. The GPU
+    // workload uses the client public key's own context anyway.
+    lbcrypto::PublicKey<lbcrypto::DCRTPoly> client_pk;
+    try {
+        std::string pk_str(public_key_blob.begin(), public_key_blob.end());
+        std::istringstream iss(pk_str, std::ios::binary);
+        lbcrypto::Serial::Deserialize(client_pk, iss, lbcrypto::SerType::BINARY);
+        tee::set_client_public_key(client_pk);
+    } catch (const std::exception& e) {
+        std::cerr << "[server] public key deserialization failed: " << e.what() << std::endl;
+        try {
+            auto resp = build_error_response(std::string("bad public key: ") + e.what());
+            send_message(client_fd, resp);
+        } catch (...) {}
+        return;
+    }
 
     // Deserialize eval keys into the context. Try each key type
     // (mult, sum, automorphism) for each blob; at least one must succeed.
     try {
-        for (auto& kb : eval_key_blobs) {
-            std::string s(kb.begin(), kb.end());
-            bool deserialized = false;
-
-            // Try EvalMultKey
-            try {
-                std::istringstream iss(s, std::ios::binary);
+        constexpr uint8_t kTypeMult = 1;
+        constexpr uint8_t kTypeAuto = 2;
+        for (size_t i = 0; i < eval_key_blobs.size(); ++i) {
+            std::string s(eval_key_blobs[i].begin(), eval_key_blobs[i].end());
+            uint8_t type_tag = eval_key_types[i];
+            std::istringstream iss(s, std::ios::binary);
+            if (type_tag == kTypeMult) {
                 lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalMultKey(
                     iss, lbcrypto::SerType::BINARY);
-                deserialized = true;
-            } catch (const std::exception&) {}
-
-            // Try EvalSumKey
-            if (!deserialized) {
-                try {
-                    std::istringstream iss(s, std::ios::binary);
-                    lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalSumKey(
-                        iss, lbcrypto::SerType::BINARY);
-                    deserialized = true;
-                } catch (const std::exception&) {}
-            }
-
-            // Try EvalAutomorphismKey
-            if (!deserialized) {
-                try {
-                    std::istringstream iss(s, std::ios::binary);
-                    lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalAutomorphismKey(
-                        iss, lbcrypto::SerType::BINARY);
-                    deserialized = true;
-                } catch (const std::exception&) {}
-            }
-
-            if (!deserialized) {
-                throw std::runtime_error(
-                    "eval key blob deserialization failed for all key types");
+            } else if (type_tag == kTypeAuto) {
+                lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalAutomorphismKey(
+                    iss, lbcrypto::SerType::BINARY);
+            } else {
+                throw std::runtime_error("unknown eval key blob type tag: " +
+                    std::to_string(static_cast<int>(type_tag)));
             }
         }
     } catch (const std::exception& e) {
@@ -249,22 +259,12 @@ void handle_client(int client_fd) {
         return;
     }
 
-    // Deserialize the client's public key
-    lbcrypto::PublicKey<lbcrypto::DCRTPoly> client_pk;
-    try {
-        std::string pk_str(public_key_blob.begin(), public_key_blob.end());
-        std::istringstream iss(pk_str, std::ios::binary);
-        lbcrypto::Serial::Deserialize(client_pk, iss, lbcrypto::SerType::BINARY);
-        // Store for FIDESlib GPU context
-        tee::set_client_public_key(client_pk);
-    } catch (const std::exception& e) {
-        std::cerr << "[server] public key deserialization failed: " << e.what() << std::endl;
-        try {
-            auto resp = build_error_response(std::string("bad public key: ") + e.what());
-            send_message(client_fd, resp);
-        } catch (...) {}
-        return;
-    }
+    // Use the client public key's own crypto context for the workload. This is
+    // the single context all deserialized keys are associated with, avoiding a
+    // duplicate context from make_context().
+    auto t_cc_start = clock::now();
+    auto cc = client_pk->GetCryptoContext();
+    auto t_cc_end = clock::now();
 
     std::vector<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>> inputs;
     inputs.reserve(input_ct_blobs.size());
