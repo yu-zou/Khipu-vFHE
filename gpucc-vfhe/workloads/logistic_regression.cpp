@@ -56,12 +56,14 @@ constexpr uint32_t kBootLevelBudgetEnc = 2;
 constexpr uint32_t kBootLevelBudgetDec = 2;
 constexpr uint32_t kBootDim1First = 16;
 constexpr uint32_t kBootDim1Second = 16;
-// Active bootstrap slots. Kept at the full batch size so the eval loop can
-// bootstrap the weights ciphertext directly (no SetSlots dance). Must match the
-// client's EvalBootstrapKeyGen. NOTE: a future optimization is to bootstrap only
-// kCols slots (as the FIDESlib logreg reference does) to shrink the eval-key set
-// dramatically, but that requires the SetSlots dance in the eval loop.
-constexpr uint32_t kBootSlots = kBatchSize;
+// Active bootstrap slots = kCols (256), matching the FIDESlib logreg reference.
+// The trained weights live in the first kCols slots (consolidated via
+// row_propagate before bootstrapping), so we only bootstrap kCols slots. This
+// keeps the bootstrap-key set and precompute small. The eval loop does the
+// SetSlots(kCols) / SetSlots(kBatchSize) dance around EvalBootstrap.
+constexpr uint32_t kBootSlots = kCols;
+// Bootstrap schedule: bootstrap every 2 iterations (after iters 2,4,6,8,10),
+// i.e. on odd 0-based indices 1,3,5,7,9. Matches spec + reference (boot_every2).
 
 // Create OpenFHE context
 CryptoContext<DCRTPoly> make_logistic_context() {
@@ -107,20 +109,73 @@ void logistic_gen_keys(CryptoContext<DCRTPoly> cc, const KeyPair<DCRTPoly>& kp) 
     cc->EvalRotateKeyGen(kp.secretKey, logreg_rotation_indices());
 }
 
-// The rotation indices required by the logreg algorithm. These correspond to
-// the AccumulateSumInPlace strides used in the eval loop:
-//   row accumulate: powers of two 1,2,...,kCols/2   (stride 1, up to kCols)
-//   col accumulate: kCols,2*kCols,... up to kRows*kCols/2
-// EvalBootstrapKeyGen generates its own bootstrap-internal rotation keys, so
-// they are not listed here. Must match the client's EvalRotateKeyGen.
+// FIDESlib AccumulateSumInPlace uses a base-bStep (=4) BSGS cascade, NOT simple
+// power-of-two rotations. The rotation indices it needs are given by these
+// generators, which mirror FIDESlib::CKKS::Accumulate / AccumulateCascadeImpl in
+// AccumulateBroadcast.cu. The server holds no secret key, so the client must
+// pre-generate keys for exactly these indices.
+static constexpr int kAccBStep = 4;
+
+// Reduce a raw rotation amount into the signed range (-kBatchSize/2, kBatchSize/2].
+// The GPU rotate reduces indices modulo the number of slots; the client must
+// generate the rotation key for the SAME reduced index.
+static int32_t reduce_rotation(long long idx) {
+    long long n = static_cast<long long>(kBatchSize);
+    long long r = ((idx % n) + n) % n;          // [0, n)
+    if (r > n / 2) r -= n;                        // (-n/2, n/2]
+    return static_cast<int32_t>(r);
+}
+
+// Mirrors Accumulate(ctxt, bStep, stride, size): s starts at 1.
+static void emit_accumulate_indices(std::vector<int32_t>& out, long long stride, int size) {
+    int logbStep = 2;  // log2(4)
+    for (long long s = 1; s < size; s <<= logbStep) {
+        for (long long idx = stride * s; idx < stride * (long long)size && idx < (long long)kAccBStep * stride * s;
+             idx += stride * s) {
+            out.push_back(reduce_rotation(idx));
+        }
+    }
+}
+
+// Mirrors AccumulateCascadeImpl(ctxt, bStep, stride, size, startFactor).
+static void emit_accumulate_cascade_indices(std::vector<int32_t>& out, long long stride,
+                                            int size, int startFactor) {
+    int logbStep = 2;
+    for (long long s = startFactor; s < size; s <<= logbStep) {
+        for (long long idx = stride * s; idx < stride * (long long)size && idx < (long long)kAccBStep * stride * s;
+             idx += stride * s) {
+            out.push_back(reduce_rotation(idx));
+        }
+    }
+}
+
+// The rotation indices required by the logreg algorithm. Must match the FIDESlib
+// GPU primitives used in the eval loop AND the bootstrap BSGS indices requested
+// by LoadContext -> AddBootstrapKeys (which OpenFHE's EvalBootstrapKeyGen does
+// not fully generate for these params). The client generates keys for exactly
+// this set; the server resolves them by key tag.
 static std::vector<int32_t> logreg_rotation_indices() {
     std::vector<int32_t> rotations;
-    for (uint32_t j = 1; j < kCols; j <<= 1) {
-        rotations.push_back(static_cast<int32_t>(j));
+
+    // row_accumulate:  AccumulateSumInPlace(ct, kCols, 1)         -> Accumulate(4, 1, kCols)
+    emit_accumulate_indices(rotations, 1, static_cast<int>(kCols));
+    // row_propagate:   AccumulateSumInPlace(ct, kCols, kBatchSize-1) -> Accumulate(4, kBatchSize-1, kCols)
+    emit_accumulate_indices(rotations, static_cast<int>(kBatchSize - 1), static_cast<int>(kCols));
+    // col_accumulate:  AccumulateSumInPlace(ct, kRows*kCols, 1, kCols)
+    //                  -> AccumulateCascadeImpl(4, 1, kRows*kCols, kCols)
+    emit_accumulate_cascade_indices(rotations, 1, static_cast<int>(kRows * kCols),
+                                    static_cast<int>(kCols));
+
+    // Bootstrap BSGS baby-step indices requested by FIDESlib GetBootstrapIndexes
+    // for kCols=256 slots, levelBudget {2,2}, which OpenFHE's EvalBootstrapKeyGen
+    // does not itself generate. Determined empirically against AddBootstrapKeys.
+    for (int i : {3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 257}) {
+        rotations.push_back(i);
     }
-    for (uint32_t j = 1; j < kRows; j <<= 1) {
-        rotations.push_back(static_cast<int32_t>(j * kCols));
-    }
+
+    // De-duplicate.
+    std::sort(rotations.begin(), rotations.end());
+    rotations.erase(std::unique(rotations.begin(), rotations.end()), rotations.end());
     return rotations;
 }
 
@@ -212,25 +267,39 @@ static lbcrypto::Ciphertext<lbcrypto::DCRTPoly> gpu_to_openfhe(
     return std::any_cast<lbcrypto::Ciphertext<lbcrypto::DCRTPoly>>(gpu_ct->cpu);
 }
 
+// Row accumulate: sum the kCols values within each row into slot r*kCols.
 static void row_accumulate(fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
                            fideslib::Ciphertext<fideslib::DCRTPoly>& ct) {
     gpu_cc->AccumulateSumInPlace(ct, kCols, 1);
 }
 
+// Row propagate: broadcast slot r*kCols back across the row (negative dir).
+static void row_propagate(fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
+                          fideslib::Ciphertext<fideslib::DCRTPoly>& ct) {
+    gpu_cc->AccumulateSumInPlace(ct, static_cast<int>(kCols),
+                                 static_cast<int>(kBatchSize - 1));
+}
+
+// Column accumulate: sum across the kRows rows (stride kCols).
 static void col_accumulate(fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
                            fideslib::Ciphertext<fideslib::DCRTPoly>& ct) {
     gpu_cc->AccumulateSumInPlace(ct, kRows * kCols, 1, kCols);
 }
 
-static fideslib::Ciphertext<fideslib::DCRTPoly> activation_gpu(
-    fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
-    const fideslib::Ciphertext<fideslib::DCRTPoly>& x) {
-    auto x2 = gpu_cc->EvalSquare(x);
-    auto x3 = gpu_cc->EvalMult(x2, x);
-    auto t1 = gpu_cc->EvalMult(x, 0.15);
-    auto t3 = gpu_cc->EvalMult(x3, -0.0015);
-    auto s = gpu_cc->EvalAdd(t1, 0.5);
-    return gpu_cc->EvalAdd(s, t3);
+// Activation p(x) = 0.5 + 0.15*x - 0.0015*x^3, applied with masks so that only
+// slot 0 of each row carries the result (matching the FIDESlib reference).
+// mask_0 has 0.5 in slot 0, mask_1 has 0.15, mask_3 has -0.0015.
+static void activation_gpu(fideslib::CryptoContext<fideslib::DCRTPoly> gpu_cc,
+                           fideslib::Ciphertext<fideslib::DCRTPoly>& ct,
+                           fideslib::Plaintext mask_0,
+                           fideslib::Plaintext mask_1,
+                           fideslib::Plaintext mask_3) {
+    auto ct3 = gpu_cc->EvalSquare(ct);        // x^2
+    auto aux = gpu_cc->EvalMult(ct, mask_3);  // -0.0015*x (slot 0)
+    ct3 = gpu_cc->EvalMult(ct3, aux);         // -0.0015*x^3
+    gpu_cc->EvalMultInPlace(ct, mask_1);      // 0.15*x
+    gpu_cc->EvalAddInPlace(ct, ct3);          // 0.15*x - 0.0015*x^3
+    gpu_cc->EvalAddInPlace(ct, mask_0);       // + 0.5
 }
 
 Ciphertext<DCRTPoly> logistic_eval(
@@ -246,6 +315,13 @@ Ciphertext<DCRTPoly> logistic_eval(
     std::cerr << "[gpu] Creating FIDESlib GPU context..." << std::endl;
     auto gpu_cc = create_gpu_context(cc);
 
+    // Build activation masks (kCols slots; only slot 0 nonzero).
+    std::vector<double> m0(kCols, 0.0), m1(kCols, 0.0), m3(kCols, 0.0);
+    m0[0] = 0.5; m1[0] = 0.15; m3[0] = -0.0015;
+    auto mask_0 = gpu_cc->MakeCKKSPackedPlaintext(m0, 1, 0, nullptr, kCols);
+    auto mask_1 = gpu_cc->MakeCKKSPackedPlaintext(m1, 1, 0, nullptr, kCols);
+    auto mask_3 = gpu_cc->MakeCKKSPackedPlaintext(m3, 1, 0, nullptr, kCols);
+
     std::cerr << "[gpu] Converting " << inputs.size() << " inputs to GPU..." << std::endl;
     std::vector<fideslib::Ciphertext<fideslib::DCRTPoly>> gpu_inputs;
     gpu_inputs.reserve(kNumInputs);
@@ -258,23 +334,33 @@ Ciphertext<DCRTPoly> logistic_eval(
     std::cerr << "[gpu] Starting training loop (10 iterations, 5 bootstraps)..." << std::endl;
 
     for (uint32_t iter = 0; iter < kNumIterations; ++iter) {
-        auto data = gpu_inputs[iter];
-        auto labels = gpu_inputs[kNumBatches + iter];
+        // Fresh copies of the batch inputs (data is mutated in-place below).
+        auto data = gpu_inputs[iter]->Clone();
+        const auto& labels = gpu_inputs[kNumBatches + iter];
+        bool do_boot = (iter % 2 == 1);  // bootstrap after iters 2,4,6,8,10
 
-        auto z = gpu_cc->EvalMult(data, weights);
-        row_accumulate(gpu_cc, z);
-        auto pred = activation_gpu(gpu_cc, z);
-        auto error = gpu_cc->EvalSub(pred, labels);
-        auto grad = gpu_cc->EvalMult(error, data);
-        col_accumulate(gpu_cc, grad);
+        // Forward: z = activation(rowsum(data * weights)) - labels
+        auto ct = gpu_cc->EvalMult(data, weights);
+        row_accumulate(gpu_cc, ct);
+        activation_gpu(gpu_cc, ct, mask_0, mask_1, mask_3);
+        gpu_cc->EvalSubInPlace(ct, labels);
+        row_propagate(gpu_cc, ct);
 
+        // Gradient: (error) * data, scaled by lr/batch, summed across rows.
         double lr = std::max(10.0 / (iter + 1), 0.005);
-        auto scaled = gpu_cc->EvalMult(grad, lr / kRows);
-        gpu_cc->EvalSubInPlace(weights, scaled);
+        double scale = lr / static_cast<double>(kRows);
+        gpu_cc->EvalMultInPlace(data, scale);
+        ct = gpu_cc->EvalMult(ct, data);
+        col_accumulate(gpu_cc, ct);
 
-        if (iter == 1 || iter == 3 || iter == 5 || iter == 7 || iter == 9) {
+        // weights -= gradient
+        gpu_cc->EvalSubInPlace(weights, ct);
+
+        if (do_boot) {
             std::cerr << "[gpu] Bootstrap after iteration " << (iter + 1) << std::endl;
-            weights = gpu_cc->EvalBootstrap(weights);
+            weights->SetSlots(kCols);
+            gpu_cc->EvalBootstrapInPlace(weights, 1, 0, false);
+            weights->SetSlots(kBatchSize);
         }
     }
 

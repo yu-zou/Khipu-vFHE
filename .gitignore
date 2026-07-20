@@ -34,3 +34,4 @@ thirdparty/FIDESlib/deps/openfhe-src/
 thirdparty/libnvat-linux-x86_64-1.2.2.1780962352-archive/
 thirdparty/libnvat-linux-x86_64-1.2.2.1780962352-archive.tar.xz
 gpucc-vfhe/build/
+tmp_test/
