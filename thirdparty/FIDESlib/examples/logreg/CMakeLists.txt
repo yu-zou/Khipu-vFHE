@@ -36,4 +36,5 @@ add_executable(logreg)
 target_sources(logreg PRIVATE ${CXX_SOURCE_FILES})
 
 target_link_libraries(logreg PRIVATE fideslib::fideslib
-        PRIVATE CUDA::cudart)
+        PRIVATE CUDA::cudart
+        PRIVATE ${CMAKE_DL_LIBS})

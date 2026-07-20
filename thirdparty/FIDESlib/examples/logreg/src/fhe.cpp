@@ -63,12 +63,28 @@ void prepare_context(const fideslib::KeyPair<fideslib::DCRTPoly>& k, size_t cols
 	cc->EvalMultKeyGen(k.secretKey);
 
 	std::vector<int> rot_idx;
-	for (size_t j = 1; j < cols; j <<= 1) {
-		rot_idx.push_back(j);
-		rot_idx.push_back(-j);
-	}
-	for (size_t i = cols; i < cols * rows; i <<= 1)
-		rot_idx.push_back(i);
+	// Base-4 BSGS accumulate indices, matching the installed library's
+	// AccumulateSumInPlace (which hardcodes bStep=4).
+	const int numSlotsInt = (int)(cols * rows);
+	auto reduce_rot = [&](long long idx) -> int {
+		long long n = numSlotsInt;
+		long long r = ((idx % n) + n) % n;
+		if (r > n / 2) r -= n;
+		return (int)r;
+	};
+	auto emit_acc = [&](long long stride, int size) {
+		for (long long s = 1; s < size; s <<= 2)
+			for (long long idx = stride * s; idx < stride * (long long)size && idx < 4 * stride * s; idx += stride * s)
+				rot_idx.push_back(reduce_rot(idx));
+	};
+	auto emit_cascade = [&](long long stride, int size, int startFactor) {
+		for (long long s = startFactor; s < size; s <<= 2)
+			for (long long idx = stride * s; idx < stride * (long long)size && idx < 4 * stride * s; idx += stride * s)
+				rot_idx.push_back(reduce_rot(idx));
+	};
+	emit_acc(1, (int)cols);                              // row_accumulate
+	emit_acc((long long)(cols * rows) - 1, (int)cols);   // row_propagate (numSlots-1)
+	emit_cascade(1, (int)(cols * rows), (int)cols);      // column_accumulate
 	if (ringDim == 1 << 16) {
 		rot_idx.push_back(32765);
 		rot_idx.push_back(32756);
@@ -81,6 +97,10 @@ void prepare_context(const fideslib::KeyPair<fideslib::DCRTPoly>& k, size_t cols
 		rot_idx.push_back(65488);
 		rot_idx.push_back(65344);
 	}
+	// Bootstrap BSGS baby-step indices requested by AddBootstrapKeys for 256
+	// slots that EvalBootstrapKeyGen does not itself generate.
+	for (int i : {3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 257})
+		rot_idx.push_back(i);
 	cc->EvalRotateKeyGen(k.secretKey, rot_idx);
 	
 	cc->EvalBootstrapSetup(levelBudget, bStep, cols, 0);
