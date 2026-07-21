@@ -90,7 +90,7 @@ which dominates the ~45 ms figure.
 
 | Metric | A (CPU) | C (GPU) | Speedup |
 |--------|--------:|--------:|--------:|
-| Pure FHE compute (2 iterations) | 81 ms | **~20×** |
+| Pure FHE compute (2 iterations) | 1,614 ms | 81 ms | **~20×** |
 | Full server-side (ctx+eval) | 1,973 ms | 38,146 ms | 0.05× |
 
 The full server-side time for Prototype C is dominated by key deserialisation
@@ -110,6 +110,8 @@ All runs use the current code version.
 | 2 | 359 | 1588 | 0 | 4731 | 60 | 36 |
 | 3 | 359 | 1614 | 0 | 4815 | 61 | 37 |
 
+All times in milliseconds.
+
 ### Prototype C (gpucc-vfhe, GPU H20)
 
 | Run | ctx | eval | outser | transcript | gpuev | quote | LoadContext | input_up | compute | client_verify |
@@ -118,6 +120,5 @@ All runs use the current code version.
 | 2 | 16428 | 21888 | 0 | 5805 | 27 | 61 | 19499 | 282 | 81 | 40 |
 | 3 | 16258 | 20871 | 0 | 5709 | 27 | 61 | 18480 | 285 | 79 | 40 |
 
-All times in milliseconds.
 
 All times in milliseconds.
