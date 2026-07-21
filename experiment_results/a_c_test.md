@@ -58,7 +58,7 @@ Both prototypes transfer eval keys inline over TCP:
 | **Total** | **6570 MB** | **7920 MB** |
 
 
-Both prototypes now send 2 inline blobs (Mult + Auto). The Auto-key size
+Both prototypes use identical serialization (verified: same SerializeEval{Mult,Automorphism}Key implementations in both OpenFHE versions, both using SerType::BINARY via Cereal). The Auto-key size difference (6480 MB vs 7830 MB) comes purely from different rotation-key counts: Prototype C generates ~119 indices (51 base-4 BSGS + 68 bootstrap-internal) vs Prototype A's ~72 indices (23 power-of-two + 68 bootstrap-internal).
 difference (6480 MB vs 7830 MB) reflects Prototype C's larger rotation-key set:
 ~51 non-power-of-two indices for base-4 BSGS accumulate vs Prototype A's ~23
 power-of-two indices.
@@ -88,9 +88,10 @@ power-of-two indices.
 | Min / Max | 1746 / 1978 ms | 23751 / 24212 ms |
 
 > Prototype C's overall `eval=` is dominated by the one-time GPU setup (~22 s).
-> Both prototypes run independent processes per measurement, so the GPU setup is
-> repeated in every run. If the server were reused across requests (known issue:
-> current servers handle only one request cleanly), the GPU setup would be a
+independent processes per measurement, so the GPU setup is repeated in every run.
+> A production server would accept multiple TCP connections (each a complete
+> training-run request) within a single process, paying the GPU setup once
+> and amortising it over many evaluations. For pure FHE compute, see the
 > one-time cost amortised over many evaluations. For pure FHE compute, see the
 > separated figures below.
 
@@ -110,6 +111,21 @@ Measured internally within the workload:
 | GPU one-time setup | 21,073 ms | 21,223 ms | 21,533 ms |
 
 **GPU compute speedup vs CPU: ~20× (1761 ms → 88 ms).**
+
+GPU setup (`LoadContext`, ~22 s) includes:
+1. **GenCryptoContextGPU** — allocate CUDA device memory for the RNS polynomial
+   parameters, scramble tables, and work buffers.
+2. **Mult key upload** — extract the relinearization key from OpenFHE's global key
+   map and upload to GPU (~90 MB).
+3. **Rotation key upload** — for each of ~51 rotation indices, extract the
+   key-switching key from OpenFHE's global automorphism map and upload to GPU
+   (~8 GB total over PCIe).
+4. **Bootstrap key upload** — extract bootstrap-internal rotation keys and upload
+   124 precomputation plaintexts (~1.5 GB) to GPU.
+
+The setup is CPU memory → GPU device memory transfer over PCIe. If the server
+handled multiple requests in one process, steps 1–4 would be done once and the
+GPU context would be reused for subsequent evaluations.
 
 ### Server Overhead Breakdown (latest single-run timings)
 
