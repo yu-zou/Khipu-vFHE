@@ -48,21 +48,17 @@ Both prototypes transfer eval keys inline over TCP:
 - **Client** generates keys (`KeyGen`, `EvalMultKeyGen`, `EvalRotateKeyGen`,
   `EvalBootstrapKeyGen`) and serialises them to binary blobs.
 - **Server** reads the blobs from the TCP stream and deserialises each into the
-  global OpenFHE key map, trying `DeserializeEvalMultKey` → `DeserializeEvalSumKey`
   → `DeserializeEvalAutomorphismKey` for each blob.
 
 | | Prototype A | Prototype C |
 |---|---|---|
-| Blobs sent | 2 (Mult, Sum, Auto) | 2 (Mult, Auto) |
-| EvalSumKey | serialised separately (redundant alias of Auto) | omitted |
+| Blobs sent | 2 (Mult, Auto) | 2 (Mult, Auto) |
 | Mult key | 90 MB | 90 MB |
-| Sum key | 6480 MB | — |
 | Auto key | 6480 MB | 7830 MB |
-| **Total** | **13050 MB** | **7920 MB** |
+| **Total** | **6570 MB** | **7920 MB** |
 
-Prototype A's Sum-key blob is a redundant copy of the automorphism key map (stock
-OpenFHE's `SerializeEvalSumKey` delegates to `SerializeEvalAutomorphismKey`).
-Prototype C omits this alias, sending only the automorphism blob directly.
+Historically, Prototype A also serialised an EvalSumKey blob, but EvalSumKey in stock
+This is a redundant alias of the automorphism key map and was removed; both prototypes now send only 2 blobs (Mult + Auto).
 
 The Auto-key size difference (6480 MB in stock OpenFHE vs 7830 MB in the
 FIDESlib-patched OpenFHE) reflects different Cereal binary encodings for the same
@@ -118,11 +114,11 @@ Measured internally within the workload:
 | Phase | Prototype A (CPU) | Prototype C (GPU H20) |
 |-------|-------------------:|-----------------------:|
 | Context creation / key deserialisation (`ctx=`) | 409 ms | 0 ms (inline in eval) |
-| FHE evaluation (`eval=`) | 1937 ms | 24680 ms |
+| FHE evaluation (`eval=`) | 1684 ms | 24680 ms |
 | Output serialization (`outser=`) | 0 ms | 0 ms |
-| Transcript generation (`transcript=`) | 10033 ms | 6044 ms |
+| Transcript generation (`transcript=`) | 4685 ms | 6044 ms |
 | GPU evidence collection (`gpuev=`) | — | 29 ms |
-| TDX quote generation (`quote=`) | 62 ms | 58 ms |
+| TDX quote generation (`quote=`) | 59 ms | 58 ms |
 
 **Context creation / key deserialisation.** Both prototypes deserialise eval-key
 blobs into OpenFHE's global key maps using the same API calls. Prototype A reports
@@ -132,10 +128,10 @@ this separately; Prototype C does it as part of `eval=` because the GPU context
 **Output serialization.** A single CKKS ciphertext serialised to binary —
 negligible in both prototypes.
 
-**Transcript generation.** Hashes the eval-key blobs (13050 MB for A, 7920 MB for
+**Transcript generation.** Hashes the eval-key blobs (6570 MB for A, 7920 MB for
 C), input ciphertexts, and output ciphertext. Both compute the hash from the parsed
 blob data inside `generate_transcript`. The ~4 s gap reflects the data-size
-difference (Prototype A hashes ~5300 MB more data).
+difference (Prototype A hashes ~1350 MB less data).
 
 **GPU evidence collection** (Prototype C only). NVIDIA NVML evidence collection
 for heterogeneous attestation.
@@ -163,12 +159,11 @@ run 2:  ctx=396ms  eval=1978ms  transcript=9814ms  quote=59ms
 run 3:  ctx=397ms  eval=1746ms  transcript=10013ms  quote=59ms
 
 latest single-run with outser=:
-  ctx=409ms  eval=1937ms  outser=0ms  transcript=10033ms  quote=62ms
+  ctx=355ms  eval=1684ms  outser=0ms  transcript=4685ms  quote=59ms
 ```
 
 Eval-key sizes:
 ```
-EvalMultKey: 90 MB   EvalSumKey: 6480 MB   EvalAutoKey: 6480 MB   Total: 13050 MB
 ```
 
 ### Prototype C (gpucc-vfhe, GPU H20)

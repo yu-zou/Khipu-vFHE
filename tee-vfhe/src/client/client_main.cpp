@@ -216,12 +216,10 @@ std::vector<std::vector<uint8_t>> serialize_all_eval_keys(
     const std::string& keyTag) {
     std::vector<std::vector<uint8_t>> blobs;
     size_t total_mb = 0;
-    auto add = [&](const char* label, bool is_mult, bool is_sum) {
+    auto add = [&](const char* label, bool is_mult) {
         std::ostringstream oss(std::ios::binary);
         bool ok = is_mult
             ? CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(oss, SerType::BINARY, keyTag)
-            : is_sum
-            ? CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(oss, SerType::BINARY, keyTag)
             : CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(oss, SerType::BINARY, keyTag);
         std::string s = oss.str();
         std::cerr << "[client] " << label << ": " << s.size() / (1024*1024) << " MB" << std::endl;
@@ -230,9 +228,8 @@ std::vector<std::vector<uint8_t>> serialize_all_eval_keys(
             total_mb += s.size() / (1024*1024);
         }
     };
-    add("EvalMultKey", true, false);
-    add("EvalSumKey", false, true);
-    add("EvalAutoKey", false, false);
+    add("EvalMultKey", true);
+    add("EvalAutoKey", false);
     std::cerr << "[client] Total eval keys: " << total_mb << " MB (" << blobs.size() << " blobs)" << std::endl;
     return blobs;
 }
