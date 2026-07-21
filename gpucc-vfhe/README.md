@@ -50,10 +50,17 @@ The identical encrypted logistic-regression workload (MNIST 1/8, CKKS,
 |--------|-------------------------------|----------------------------------|
 | FHE compute — median | **1761 ms** | **88 ms** |
 | FHE compute — min / max | 1746 / 1978 ms | 86 / 89 ms |
-| **Speedup** | — | **~20×** |
+| Transcript generation (incl. eval-key hashing) | ~9800 ms | ~6100 ms |
+| TDX quote generation | ~59 ms | ~60 ms |
+| One-time GPU setup (LoadContext) | — | ~21 s |
+| **Speedup (compute only)** | — | **~20×** |
 
 - **Identical decrypted weights** on A and C (`max|w|=0.416963` at
   feature 91), confirming algorithmic equivalence.
+- Transcript times are now directly comparable: both prototypes compute the
+  eval-key hash from the parsed blob data inside the `generate_transcript`
+  timer. The ~3.7 s difference reflects different key-set sizes (different
+  rotation-key indices between the two backends).
 - One-time GPU setup (LoadContext, key upload) is ~21 s — excluded from
   the compute figures, amortises over longer workloads.
 

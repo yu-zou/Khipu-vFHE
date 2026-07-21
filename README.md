@@ -148,6 +148,8 @@ no bootstrap — see Known Issues).
 |--------|-------------------:|---------------------:|--------:|
 | FHE compute median | **1761 ms** | **88 ms** | **~20×** |
 | FHE compute min / max | 1746 / 1978 ms | 86 / 89 ms | |
+| Transcript (incl. eval-key hash) | ~9800 ms | ~6100 ms | — |
+| TDX quote generation | ~59 ms | ~60 ms | — |
 | One-time GPU setup (LoadContext) | — | ~21 s | — |
 
 Both prototypes produce **identical decrypted weights** confirming algorithmic

@@ -258,9 +258,10 @@ static EvalKeysFileResult serialize_eval_keys_to_file(
     constexpr uint8_t kTypeMult = 1;
     constexpr uint8_t kTypeAuto = 2;
 
-    // Compute hash incrementally using blake3 streaming
-    blake3_hasher hasher;
-    blake3_hasher_init(&hasher);
+    // Serialized blob data for hash computation (server will hash the same
+    // concatenated blob data via generate_transcript).
+    std::vector<std::vector<uint8_t>> blob_data;
+    blob_data.reserve(2);
 
     auto write_key_type = [&](const char* name, uint8_t type_tag) {
         std::ostringstream tmp_oss(std::ios::binary);
@@ -274,15 +275,14 @@ static EvalKeysFileResult serialize_eval_keys_to_file(
         size_t sz = tmp_str.size();
         std::cerr << "[client] " << name << ": " << sz / (1024*1024) << " MB" << std::endl;
 
+        // Store blob data (server will hash the concatenation of these).
+        std::vector<uint8_t> blob(tmp_str.begin(), tmp_str.end());
+        blob_data.push_back(std::move(blob));
+
         // Build length prefix bytes
         uint64_t sz64 = sz;
         uint8_t len_bytes[8];
         for (int i = 7; i >= 0; i--) { len_bytes[i] = sz64 & 0xFF; sz64 >>= 8; }
-
-        // Update hash with type tag + length prefix + data
-        blake3_hasher_update(&hasher, reinterpret_cast<const char*>(&type_tag), 1);
-        blake3_hasher_update(&hasher, reinterpret_cast<const char*>(len_bytes), 8);
-        blake3_hasher_update(&hasher, tmp_str.data(), sz);
 
         // Write to main file: [type:1][len:8][data]
         ofs.write(reinterpret_cast<const char*>(&type_tag), 1);
@@ -308,8 +308,9 @@ static EvalKeysFileResult serialize_eval_keys_to_file(
             " (disk full or I/O error)");
     }
 
-    // Finalize hash
-    blake3_hasher_finalize(&hasher, result.combined_hash.data(), BLAKE3_OUT_LEN);
+    // Compute the combined hash from the raw blob data (matching the server's
+    // generate_transcript -> hash_concatenated(eval_key_blobs)).
+    result.combined_hash = hash_concatenated(blob_data);
 
     std::cerr << "[client] Total eval keys written to file: "
               << result.total_size / (1024*1024) << " MB" << std::endl;

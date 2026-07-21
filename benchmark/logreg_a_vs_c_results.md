@@ -52,8 +52,17 @@ informative weights are in the middle feature indices.)
 | Compute — **median** | **1761 ms** | **88 ms** |
 | Compute — mean | 1828 ms | 87 ms |
 | Compute — max | 1978 ms | 89 ms |
+| Transcript (incl. eval-key hashing) — median | ~9800 ms | ~6100 ms |
+| TDX quote generation — median | ~59 ms | ~60 ms |
 
 **GPU compute speedup: ~20× (1761 ms → 88 ms) for the identical 2-iteration workload.**
+
+### Transcript timing
+
+Both prototypes now compute the eval-key hash from the parsed blob data inside the
+`generate_transcript` timer, so `transcript=` is directly comparable. The ~3.7 s
+difference reflects different key-set sizes (the two prototypes use different
+rotation-key index sets due to their different backends).
 
 ### One-time GPU setup (Prototype C only)
 

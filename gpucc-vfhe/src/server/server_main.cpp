@@ -127,7 +127,6 @@ void handle_client(int client_fd) {
     std::vector<uint8_t> nonce;
     std::vector<std::vector<uint8_t>> eval_key_blobs;
     std::vector<uint8_t> eval_key_types;  // parallel: 1=mult, 2=automorphism
-    Hash32 eval_key_hash{};
     std::vector<uint8_t> public_key_blob;
     std::vector<std::vector<uint8_t>> input_ct_blobs;
     std::string workload_id;
@@ -136,26 +135,8 @@ void handle_client(int client_fd) {
         nonce = r.read_blob();
         public_key_blob = r.read_blob(); // public key
         std::string eval_keys_path = r.read_string(); // path to eval keys file
-        // Read eval keys from file and compute hash
+        // Parse the eval key blobs from file
         {
-            // First pass: compute hash of file content (streaming, no large buffer)
-        {
-            std::ifstream hash_ifs(eval_keys_path, std::ios::binary);
-            if (!hash_ifs.is_open()) throw std::runtime_error("cannot open eval keys file for hashing");
-            blake3_hasher hasher;
-            blake3_hasher_init(&hasher);
-            // Skip 4-byte count header
-            uint8_t skip[4];
-            hash_ifs.read(reinterpret_cast<char*>(skip), 4);
-            // Stream hash all remaining data in chunks
-            char chunk[1 << 20]; // 1 MB chunks
-            while (hash_ifs.read(chunk, sizeof(chunk)) || hash_ifs.gcount() > 0) {
-                blake3_hasher_update(&hasher, static_cast<const char*>(chunk), hash_ifs.gcount());
-            }
-            blake3_hasher_finalize(&hasher, reinterpret_cast<uint8_t*>(eval_key_hash.data()), BLAKE3_OUT_LEN);
-        }
-
-            // Now parse the eval key blobs
             std::ifstream ifs(eval_keys_path, std::ios::binary);
             if (!ifs.is_open()) throw std::runtime_error("cannot open eval keys file: " + eval_keys_path);
             uint32_t num_keys_net = 0;
@@ -311,7 +292,7 @@ void handle_client(int client_fd) {
 
     // Generate transcript (without timings) and compute hash.
     auto t_transcript_start = clock::now();
-    Transcript transcript = generate_transcript(nonce, eval_key_hash, input_ct_blobs,
+    Transcript transcript = generate_transcript(nonce, eval_key_blobs, input_ct_blobs,
                                                 output_ct_bytes);
     auto t_transcript_end = clock::now();
 
