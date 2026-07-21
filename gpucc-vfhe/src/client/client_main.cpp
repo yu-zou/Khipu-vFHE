@@ -231,89 +231,39 @@ static Hash32 hash_concatenated(const std::vector<std::vector<uint8_t>>& parts) 
 // Stream-based eval key serialization to file
 // Each key type is serialized to a temp file, hashed, then appended to main file.
 // This avoids holding all 23.8 GB in RAM simultaneously.
-struct EvalKeysFileResult {
-    std::string path;
-    Hash32 combined_hash;  // hash of all blob data concatenated
+struct EvalKeysResult {
+    std::vector<std::vector<uint8_t>> blobs;  // raw blob data for inline TCP transfer
+    Hash32 combined_hash;
     size_t total_size;
 };
 
-static EvalKeysFileResult serialize_eval_keys_to_file(
+static EvalKeysResult serialize_eval_keys(
     const CryptoContext<DCRTPoly>& cc) {
-    EvalKeysFileResult result;
-    result.path = "/tmp/eval_keys_" + std::to_string(getpid()) + ".bin";
+    EvalKeysResult result;
     result.total_size = 0;
+    result.blobs.reserve(2);
 
-    std::ofstream ofs(result.path, std::ios::binary);
-    // Two key blobs: relinearization (mult) key and the full automorphism map
-    // (rotations + bootstrap + conjugation). NOTE: EvalSumKey in OpenFHE is an
-    // ALIAS of the automorphism map, so serializing it separately is redundant
-    // AND its deserializer only restores a filtered subset. We therefore send
-    // exactly two blobs, each tagged with an explicit 1-byte type so the server
-    // uses the correct deserializer (no fragile format-guessing).
-    uint32_t num_keys = 2;
-    uint32_t num_keys_be = htonl(num_keys);
-    ofs.write(reinterpret_cast<const char*>(&num_keys_be), 4);
-
-    // Explicit blob type tags (1 byte, written before the length prefix).
-    constexpr uint8_t kTypeMult = 1;
-    constexpr uint8_t kTypeAuto = 2;
-
-    // Serialized blob data for hash computation (server will hash the same
-    // concatenated blob data via generate_transcript).
-    std::vector<std::vector<uint8_t>> blob_data;
-    blob_data.reserve(2);
-
-    auto write_key_type = [&](const char* name, uint8_t type_tag) {
+    auto add = [&](const char* name, bool is_mult) {
         std::ostringstream tmp_oss(std::ios::binary);
-        bool ok = (type_tag == kTypeMult)
+        is_mult
             ? CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(tmp_oss, SerType::BINARY)
             : CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(tmp_oss, SerType::BINARY);
-        if (!ok) {
-            std::cerr << "[client] WARNING: " << name << " serialization returned false" << std::endl;
-        }
         std::string tmp_str = tmp_oss.str();
         size_t sz = tmp_str.size();
         std::cerr << "[client] " << name << ": " << sz / (1024*1024) << " MB" << std::endl;
 
-        // Store blob data (server will hash the concatenation of these).
         std::vector<uint8_t> blob(tmp_str.begin(), tmp_str.end());
-        blob_data.push_back(std::move(blob));
-
-        // Build length prefix bytes
-        uint64_t sz64 = sz;
-        uint8_t len_bytes[8];
-        for (int i = 7; i >= 0; i--) { len_bytes[i] = sz64 & 0xFF; sz64 >>= 8; }
-
-        // Write to main file: [type:1][len:8][data]
-        ofs.write(reinterpret_cast<const char*>(&type_tag), 1);
-        ofs.write(reinterpret_cast<const char*>(len_bytes), 8);
-        ofs.write(tmp_str.data(), sz);
-        // Fail loudly on a short/failed write (e.g. disk full) instead of
-        // silently truncating the key file, which would corrupt the keys the
-        // server deserializes.
-        if (!ofs) {
-            throw std::runtime_error(std::string("failed writing eval key '") + name +
-                "' to " + result.path + " (disk full or I/O error)");
-        }
+        result.blobs.push_back(std::move(blob));
         result.total_size += sz;
     };
 
-    write_key_type("EvalMultKey", kTypeMult);
-    write_key_type("EvalAutoKey", kTypeAuto);
+    add("EvalMultKey", true);
+    add("EvalAutoKey", false);
 
-    ofs.flush();
-    ofs.close();
-    if (!ofs) {
-        throw std::runtime_error("failed to finalize eval key file " + result.path +
-            " (disk full or I/O error)");
-    }
+    result.combined_hash = hash_concatenated(result.blobs);
 
-    // Compute the combined hash from the raw blob data (matching the server's
-    // generate_transcript -> hash_concatenated(eval_key_blobs)).
-    result.combined_hash = hash_concatenated(blob_data);
-
-    std::cerr << "[client] Total eval keys written to file: "
-              << result.total_size / (1024*1024) << " MB" << std::endl;
+    std::cerr << "[client] Total eval keys: " << result.total_size / (1024*1024)
+              << " MB (" << result.blobs.size() << " blobs)" << std::endl;
     return result;
 }
 
@@ -378,9 +328,8 @@ int main(int argc, char** argv) {
 
         std::vector<uint8_t> nonce = random_nonce(16);
 
-        // Serialize eval keys directly to file (avoids 23.8 GB in-memory buffer)
-        auto eval_keys_result = serialize_eval_keys_to_file(cc);
-        std::string eval_keys_path = eval_keys_result.path;
+        // Serialize eval keys to blobs for inline TCP transfer.
+        auto eval_keys_result = serialize_eval_keys(cc);
 
         // Serialize the public key (needed by FIDESlib GPU on server side)
         std::string pk_serialized;
@@ -434,10 +383,10 @@ int main(int argc, char** argv) {
         }
 
         BufWriter w;
-        // Send small payload over TCP: nonce + pk + eval_keys_path + ciphertexts + workload_id
         w.write_blob(nonce);
         w.write_blob(std::vector<uint8_t>(pk_serialized.begin(), pk_serialized.end()));
-        w.write_string(eval_keys_path);
+        w.write_u32_be(static_cast<uint32_t>(eval_keys_result.blobs.size()));
+        for (auto& b : eval_keys_result.blobs) w.write_blob(b);
         w.write_u32_be(static_cast<uint32_t>(input_ct_blobs.size()));
         for (const auto& c : input_ct_blobs) w.write_blob(c);
         w.write_string(workload_id);

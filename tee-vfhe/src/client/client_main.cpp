@@ -213,38 +213,27 @@ std::vector<Ciphertext<DCRTPoly>> gen_logreg_inputs(
 }
 
 std::vector<std::vector<uint8_t>> serialize_all_eval_keys(
-    const CryptoContext<DCRTPoly>& cc) {
+    const std::string& keyTag) {
     std::vector<std::vector<uint8_t>> blobs;
-    {
+    size_t total_mb = 0;
+    auto add = [&](const char* label, bool is_mult, bool is_sum) {
         std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
+        bool ok = is_mult
+            ? CryptoContextImpl<DCRTPoly>::SerializeEvalMultKey(oss, SerType::BINARY, keyTag)
+            : is_sum
+            ? CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(oss, SerType::BINARY, keyTag)
+            : CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(oss, SerType::BINARY, keyTag);
+        std::string s = oss.str();
+        std::cerr << "[client] " << label << ": " << s.size() / (1024*1024) << " MB" << std::endl;
+        if (ok && !s.empty()) {
+            blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
+            total_mb += s.size() / (1024*1024);
         }
-    }
-    {
-        std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalSumKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
-        }
-    }
-    {
-        std::ostringstream oss(std::ios::binary);
-        bool ok = CryptoContextImpl<DCRTPoly>::SerializeEvalAutomorphismKey(
-            oss, SerType::BINARY, cc);
-        if (ok) {
-            std::string s = oss.str();
-            if (!s.empty())
-                blobs.push_back(std::vector<uint8_t>(s.begin(), s.end()));
-        }
-    }
+    };
+    add("EvalMultKey", true, false);
+    add("EvalSumKey", false, true);
+    add("EvalAutoKey", false, false);
+    std::cerr << "[client] Total eval keys: " << total_mb << " MB (" << blobs.size() << " blobs)" << std::endl;
     return blobs;
 }
 
@@ -316,7 +305,7 @@ int main(int argc, char** argv) {
 
         std::vector<uint8_t> nonce = random_nonce(16);
 
-        std::vector<std::vector<uint8_t>> eval_keys = serialize_all_eval_keys(cc);
+        std::vector<std::vector<uint8_t>> eval_keys = serialize_all_eval_keys(kp.publicKey->GetKeyTag());
 
         std::vector<std::vector<uint8_t>> input_ct_blobs;
         std::vector<Ciphertext<DCRTPoly>> input_cts;

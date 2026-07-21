@@ -126,7 +126,6 @@ void handle_client(int client_fd) {
 
     std::vector<uint8_t> nonce;
     std::vector<std::vector<uint8_t>> eval_key_blobs;
-    std::vector<uint8_t> eval_key_types;  // parallel: 1=mult, 2=automorphism
     std::vector<uint8_t> public_key_blob;
     std::vector<std::vector<uint8_t>> input_ct_blobs;
     std::string workload_id;
@@ -134,32 +133,14 @@ void handle_client(int client_fd) {
         BufReader r(req);
         nonce = r.read_blob();
         public_key_blob = r.read_blob(); // public key
-        std::string eval_keys_path = r.read_string(); // path to eval keys file
-        // Parse the eval key blobs from file
-        {
-            std::ifstream ifs(eval_keys_path, std::ios::binary);
-            if (!ifs.is_open()) throw std::runtime_error("cannot open eval keys file: " + eval_keys_path);
-            uint32_t num_keys_net = 0;
-            ifs.read(reinterpret_cast<char*>(&num_keys_net), 4);
-            uint32_t num_keys = ntohl(num_keys_net);
-            eval_key_blobs.reserve(num_keys);
-            eval_key_types.reserve(num_keys);
-            for (uint32_t i = 0; i < num_keys; ++i) {
-                uint8_t type_tag = 0;
-                ifs.read(reinterpret_cast<char*>(&type_tag), 1);
-                uint8_t len_bytes[8];
-                ifs.read(reinterpret_cast<char*>(len_bytes), 8);
-                uint64_t sz = 0;
-                for (int j = 0; j < 8; j++) { sz = (sz << 8) | len_bytes[j]; }
-                std::vector<uint8_t> blob(sz);
-                ifs.read(reinterpret_cast<char*>(blob.data()), sz);
-                eval_key_blobs.push_back(std::move(blob));
-                eval_key_types.push_back(type_tag);
-            }
-            ifs.close();
-            std::cerr << "[server] Read " << num_keys << " eval key blobs from " << eval_keys_path << std::endl;
-            std::remove(eval_keys_path.c_str());
+
+        uint32_t num_key_blobs = r.read_u32_be();
+        eval_key_blobs.reserve(num_key_blobs);
+        for (uint32_t i = 0; i < num_key_blobs; ++i) {
+            eval_key_blobs.push_back(r.read_blob());
         }
+        std::cerr << "[server] Read " << num_key_blobs << " eval key blobs inline" << std::endl;
+
         uint32_t num_cts = r.read_u32_be();
         input_ct_blobs.reserve(num_cts);
         for (uint32_t i = 0; i < num_cts; ++i) {
@@ -211,24 +192,44 @@ void handle_client(int client_fd) {
         return;
     }
 
-    // Deserialize eval keys into the context. Try each key type
-    // (mult, sum, automorphism) for each blob; at least one must succeed.
+    // Deserialize eval keys into the context. Try each key type for each
+    // blob; at least one must succeed (matching Prototype A's approach).
     try {
-        constexpr uint8_t kTypeMult = 1;
-        constexpr uint8_t kTypeAuto = 2;
         for (size_t i = 0; i < eval_key_blobs.size(); ++i) {
             std::string s(eval_key_blobs[i].begin(), eval_key_blobs[i].end());
-            uint8_t type_tag = eval_key_types[i];
-            std::istringstream iss(s, std::ios::binary);
-            if (type_tag == kTypeMult) {
+            bool deserialized = false;
+
+            // Try EvalMultKey
+            try {
+                std::istringstream iss(s, std::ios::binary);
                 lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalMultKey(
                     iss, lbcrypto::SerType::BINARY);
-            } else if (type_tag == kTypeAuto) {
-                lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalAutomorphismKey(
-                    iss, lbcrypto::SerType::BINARY);
-            } else {
-                throw std::runtime_error("unknown eval key blob type tag: " +
-                    std::to_string(static_cast<int>(type_tag)));
+                deserialized = true;
+            } catch (const std::exception&) {}
+
+            // Try EvalSumKey
+            if (!deserialized) {
+                try {
+                    std::istringstream iss(s, std::ios::binary);
+                    lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalSumKey(
+                        iss, lbcrypto::SerType::BINARY);
+                    deserialized = true;
+                } catch (const std::exception&) {}
+            }
+
+            // Try EvalAutomorphismKey
+            if (!deserialized) {
+                try {
+                    std::istringstream iss(s, std::ios::binary);
+                    lbcrypto::CryptoContextImpl<lbcrypto::DCRTPoly>::DeserializeEvalAutomorphismKey(
+                        iss, lbcrypto::SerType::BINARY);
+                    deserialized = true;
+                } catch (const std::exception&) {}
+            }
+
+            if (!deserialized) {
+                throw std::runtime_error("eval key blob " + std::to_string(i) +
+                    " could not be deserialized by any known key type");
             }
         }
     } catch (const std::exception& e) {
