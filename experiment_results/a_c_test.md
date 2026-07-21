@@ -57,13 +57,11 @@ Both prototypes transfer eval keys inline over TCP:
 | Auto key | 6480 MB | 7830 MB |
 | **Total** | **6570 MB** | **7920 MB** |
 
-Historically, Prototype A also serialised an EvalSumKey blob, but EvalSumKey in stock
-This is a redundant alias of the automorphism key map and was removed; both prototypes now send only 2 blobs (Mult + Auto).
 
-The Auto-key size difference (6480 MB in stock OpenFHE vs 7830 MB in the
-FIDESlib-patched OpenFHE) reflects different Cereal binary encodings for the same
-key map content plus Prototype C's larger rotation-key set (base-4 BSGS accumulate
-requires ~51 non-power-of-two indices vs Prototype A's ~23 power-of-two indices).
+Both prototypes now send 2 inline blobs (Mult + Auto). The Auto-key size
+difference (6480 MB vs 7830 MB) reflects Prototype C's larger rotation-key set:
+~51 non-power-of-two indices for base-4 BSGS accumulate vs Prototype A's ~23
+power-of-two indices.
 
 ### Environments
 
@@ -89,8 +87,12 @@ requires ~51 non-power-of-two indices vs Prototype A's ~23 power-of-two indices)
 | **Median** | **1761 ms** | **23879 ms** |
 | Min / Max | 1746 / 1978 ms | 23751 / 24212 ms |
 
-> Prototype C's overall `eval=` is dominated by the one-time GPU setup
-> (~22 s; see next section). For pure FHE compute, see the separated figures.
+> Prototype C's overall `eval=` is dominated by the one-time GPU setup (~22 s).
+> Both prototypes run independent processes per measurement, so the GPU setup is
+> repeated in every run. If the server were reused across requests (known issue:
+> current servers handle only one request cleanly), the GPU setup would be a
+> one-time cost amortised over many evaluations. For pure FHE compute, see the
+> separated figures below.
 
 #### GPU-Separated Compute (Prototype C only)
 
