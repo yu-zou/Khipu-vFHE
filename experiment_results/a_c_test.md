@@ -44,16 +44,16 @@ total unique counts are ~72 (A) vs ~119 (C). Each key encodes identically; more 
 
 ## Measurement Results
 
-### Server-Side Timing (median of 3 runs)
+### Server-Side Timing (3 runs each, median)
 
 | Phase | Prototype A (CPU) | Prototype C (GPU H20) |
 |-------|-------------------:|-----------------------:|
-| Key deserialisation (`ctx`) | 417 ms | 17,450 ms |
-| FHE evaluation (`eval`) | 1,862 ms | 24,977 ms |
+| Key deserialisation (`ctx`) | 359 ms | 16,258 ms |
+| FHE evaluation (`eval`) | 1,614 ms | 21,888 ms |
 | Output serialisation (`outser`) | 0 ms | 0 ms |
-| Transcript generation (`transcript`) | 5,019 ms | 6,103 ms |
-| GPU evidence collection (`gpuev`) | — | 28 ms |
-| TDX quote generation (`quote`) | 62 ms | 60 ms |
+| Transcript generation (`transcript`) | 4,731 ms | 5,773 ms |
+| GPU evidence collection (`gpuev`) | — | 27 ms |
+| TDX quote generation (`quote`) | 60 ms | 61 ms |
 
 **Key deserialisation** reads the eval key blobs from the TCP stream and
 deserialises them into OpenFHE's global key map (same API calls in both
@@ -72,16 +72,16 @@ Timers within the workload:
 
 | Phase | Time |
 |-------|-----:|
-| GPU context + LoadContext | 22,177 ms |
-| Input upload (21 ciphertexts) | 336 ms |
-| Pure FHE compute (2 iterations) | 90 ms |
+| GPU context + LoadContext | 19,499 ms |
+| Input upload (21 ciphertexts) | 285 ms |
+| Pure FHE compute (2 iterations) | 81 ms |
 
-### Client Verification Time (single run)
+### Client Verification Time (3 runs each, median)
 
 | Prototype | Verification |
 |-----------|-------------:|
-| A | 42 ms |
-| C | 45 ms |
+| A | 37 ms |
+| C | 40 ms |
 
 Verification includes transcript check + remote Alibaba Cloud attestation call,
 which dominates the ~45 ms figure.
@@ -90,8 +90,8 @@ which dominates the ~45 ms figure.
 
 | Metric | A (CPU) | C (GPU) | Speedup |
 |--------|--------:|--------:|--------:|
-| Pure FHE compute (2 iters) | 1,862 ms | 90 ms | **~21×** |
-| Full server-side (ctx+eval) | 2,279 ms | 42,427 ms | 0.05× |
+| Pure FHE compute (2 iterations) | 81 ms | **~20×** |
+| Full server-side (ctx+eval) | 1,973 ms | 38,146 ms | 0.05× |
 
 The full server-side time for Prototype C is dominated by key deserialisation
 (17,450 ms) and GPU upload (22,177 ms), both one-time costs tied to the per-run
@@ -100,23 +100,24 @@ making the ~21× compute speedup the meaningful figure.
 
 ## Raw Measurements (all runs)
 
+All runs use the current code version.
+
 ### Prototype A (tee-vfhe, CPU)
 
-| Run | ctx | eval | outser | transcript | quote | client_verify | Notes |
-|-----|----:|-----:|-------:|-----------:|------:|---------------:|-------|
-| 1 | 417 | 1862 | 0 | 5019 | 62 | 42 | full timing; redundant Sum blob removed |
-| 2 | 399 | 1761 | — | 9822 | 60 | — | original benchmark (3-blob serialisation) |
-| 3 | 396 | 1978 | — | 9814 | 59 | — | original benchmark (3-blob serialisation) |
-| 4 | 397 | 1746 | — | 10013 | 59 | — | original benchmark (3-blob serialisation) |
+| Run | ctx | eval | outser | transcript | quote | client_verify |
+|-----|----:|-----:|-------:|-----------:|------:|--------------:|
+| 1 | 367 | 1633 | 0 | 4716 | 59 | 37 |
+| 2 | 359 | 1588 | 0 | 4731 | 60 | 36 |
+| 3 | 359 | 1614 | 0 | 4815 | 61 | 37 |
 
 ### Prototype C (gpucc-vfhe, GPU H20)
 
-| Run | ctx | eval | outser | transcript | gpuev | quote | LoadContext | input_up | compute | client_verify | Notes |
-|-----|----:|-----:|-------:|-----------:|------:|------:|------------:|---------:|--------:|--------------:|-------|
-| 1 | 17450 | 24977 | 0 | 6103 | 28 | 60 | 22177 | 336 | 90 | 45 | full timing; widened ctx boundary |
-| 2 | — | 24212 | — | — | — | 60 | 21533 | 331 | 89 | — | old ctx boundary (0ms); pre-transcript-fix |
-| 3 | — | 23751 | — | — | — | 58 | 21073 | 318 | 86 | — | old ctx boundary (0ms); pre-transcript-fix |
-| 4 | — | 23879 | — | — | — | 60 | 21223 | 320 | 88 | — | old ctx boundary (0ms); pre-transcript-fix |
+| Run | ctx | eval | outser | transcript | gpuev | quote | LoadContext | input_up | compute | client_verify |
+|-----|----:|-----:|-------:|-----------:|------:|------:|------------:|---------:|--------:|--------------:|
+| 1 | 16177 | 21958 | 0 | 5773 | 27 | 62 | 19512 | 314 | 86 | 41 |
+| 2 | 16428 | 21888 | 0 | 5805 | 27 | 61 | 19499 | 282 | 81 | 40 |
+| 3 | 16258 | 20871 | 0 | 5709 | 27 | 61 | 18480 | 285 | 79 | 40 |
 
-All times in milliseconds. `LoadContext` = GPU context creation + PCIe key upload.
-`input_up` = ciphertext upload CPU→GPU. `compute` = pure GPU FHE (2 iterations).
+All times in milliseconds.
+
+All times in milliseconds.
