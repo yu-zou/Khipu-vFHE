@@ -1,7 +1,0 @@
-Context: 982ms
-KeyGen+Bootstrap: 10184ms
-EvalMultKey: 90 MB
-EvalSumKey: 7650 MB
-EvalAutoKey: 7650 MB
-Serialize: 33459ms
-TOTAL serialized: 15391 MB (15.0303 GB)

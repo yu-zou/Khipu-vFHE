@@ -1,6 +1,0 @@
-KeyGen done
-EvalMultKeyGen done
-EvalRotateKeyGen done
-EvalBootstrapSetup done
-EvalBootstrapKeyGen done
-Calling LoadContext...

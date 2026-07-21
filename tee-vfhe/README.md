@@ -288,6 +288,7 @@ The server will:
 | `micro_rotate` | Slot rotation | 0 | 1 × 32 slots |
 | `app_matvec` | 256×256 matrix-vector multiply | 4 | 1 × 256 slots |
 | `app_inference` | 1-layer MLP (128→64→10) | 5 | 1 × 128 slots |
+| `logistic_regression` | Encrypted logistic-regression training (MNIST 1/8) | 22 | 21 × 32768 slots |
 
 ### Running Benchmarks
 
@@ -618,6 +619,21 @@ tee-vfhe/
 3. **Performance**: TDX attestation adds 3-5 seconds per computation
 4. **Scalability**: Single-threaded server, no connection pooling
 5. **Error Handling**: Minimal error recovery in prototype
+6. **Single-request servers**: Global-key-map / connection state does not cleanly
+   teardown between requests; servers need a restart per client.
+
+### Benchmark vs Prototype C (GPU)
+
+The identical encrypted logistic-regression workload (MNIST 1/8, CKKS,
+2 iterations, no bootstrap) was run on both Prototype A and Prototype C
+(FIDESlib GPU). See `benchmark/logreg_a_vs_c_results.md` for the full report.
+
+| Metric | A (CPU, tee-vfhe) | C (GPU, gpucc-vfhe) |
+|--------|-------------------:|---------------------:|
+| FHE compute — median | **1761 ms** | **88 ms** |
+| One-time GPU setup | — | ~21 s |
+
+Both produce **identical decrypted weights**, confirming algorithmic equivalence.
 
 ## Contributing
 

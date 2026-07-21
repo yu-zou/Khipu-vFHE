@@ -9,10 +9,10 @@ Khipu-vFHE is a research project that compares two approaches to verifiable full
 | `tee-vfhe/` | Prototype A: CKKS + TDX vFHE baseline (see its `README.md`) |
 | `tee-vfhe-bgvrns/` | Prototype E: BGVrns + TDX vFHE for comparison with zkOpenFHE (see its `README.md`) |
 | `zk-vfhe/` | Prototype B: zkOpenFHE ZK-based vFHE (separate prototype) |
-| `gpucc-vfhe/` | Prototype C/D: GPU and heterogeneous vFHE variants (separate prototypes) |
+| `gpucc-vfhe/` | Prototype C (GPU FIDESlib) and D (heterogeneous vFHE) — see its `README.md` |
 | `scripts/` | Shared setup, build, run, and integration-test shell scripts |
-| `thirdparty/` | Vendored dependencies: BLAKE3 and nlohmann/json |
-| `benchmark/` | Cross-prototype benchmark assets and harnesses |
+| `thirdparty/` | Vendored dependencies: BLAKE3, nlohmann/json, FIDESlib, NVTrust |
+| `benchmark/` | Cross-prototype benchmark assets, results, and harnesses |
 | `design_guideline/` | Design documents (gitignored, may be populated separately) |
 
 ## Prerequisites
@@ -134,7 +134,49 @@ A zero-knowledge-based verifiable FHE prototype built on zkOpenFHE. This prototy
 
 ### Prototypes C and D: GPU and Heterogeneous vFHE (`gpucc-vfhe/`)
 
-GPU and heterogeneous vFHE prototypes. These explore acceleration and partitioning strategies on GPU hardware and are kept separate from the CPU-only TDX prototypes.
+GPU-accelerated and heterogeneous vFHE prototypes built on FIDESlib
+(NVIDIA H20 GPU backend) with Intel TDX + NVIDIA confidential-compute
+attestation. See `gpucc-vfhe/README.md` for details and build/run
+instructions.
+
+### Benchmark: Prototype C (GPU) vs Prototype A (CPU)
+
+Encrypted logistic-regression training (MNIST 1/8, CKKS, 2 iterations,
+no bootstrap — see Known Issues).
+
+| Metric | A (CPU, tee-vfhe) | C (GPU, gpucc-vfhe) | Speedup |
+|--------|-------------------:|---------------------:|--------:|
+| FHE compute median | **1761 ms** | **88 ms** | **~20×** |
+| FHE compute min / max | 1746 / 1978 ms | 86 / 89 ms | |
+| One-time GPU setup (LoadContext) | — | ~21 s | — |
+
+Both prototypes produce **identical decrypted weights** confirming algorithmic
+correctness. Full results: `benchmark/logreg_a_vs_c_results.md`.
+
+## Known Issues
+
+1. **FIDESlib GPU bootstrap is broken on this H20 install.**
+   `EvalBootstrapInPlace` produces ciphertexts that cannot be decrypted
+   ("approximation error too high"). The upstream FIDESlib logreg reference
+   (`thirdparty/FIDESlib/examples/logreg`) fails the same way, so this is a
+   library-level issue affecting the installed FIDESlib version on this
+   machine, not an integration bug in the prototypes. Workaround: the
+   no-bootstrap benchmark keeps both prototypes on identical 2-iteration
+   workloads that fit within the multiplicative budget.
+
+2. **Prototype C/D servers handle only one request cleanly.** GPU-resource
+   and global-key-map teardown between requests is not yet robust.
+   Benchmark scripts work around this by starting a fresh server per run.
+
+3. **Prototype A (tee-vfhe) does not yet include the logistic-regression
+   workload in its workload table** (modern workloads section). The
+   `logistic_regression` workload was added during the benchmark and works
+   but is still listed only in the available workloads section; the workload
+   table and benchmark runner may not include it.
+
+4. **Multiplicative depth limit without bootstrap.** Depth-22 is sufficient
+   for ~2 iterations; bootstrapping would be needed for the full 10-iteration
+   reference algorithm. Tracked as future work pending the bootstrap fix.
 
 ## References
 
