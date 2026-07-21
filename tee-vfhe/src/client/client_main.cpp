@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -389,7 +390,9 @@ int main(int argc, char** argv) {
         }
         Hash32 expected_output_ct_hash = blake3_hash(output_ct_bytes);
 
+        using clk = std::chrono::high_resolution_clock;
         Verifier verifier;
+        auto t_vfy_start = clk::now();
         bool transcript_ok = verifier.verify_transcript(
             transcript, nonce, expected_eval_key_hash,
             expected_input_ct_hashes, expected_output_ct_hash);
@@ -408,11 +411,14 @@ int main(int argc, char** argv) {
                       << std::endl;
             return 1;
         }
+        auto t_vfy_end = clk::now();
 
         auto output_ct = deserialize_ciphertext(
             std::string(output_ct_bytes.begin(), output_ct_bytes.end()));
         Plaintext pt_out;
+        auto t_dec_start = clk::now();
         cc->Decrypt(kp.secretKey, output_ct, &pt_out);
+        auto t_dec_end = clk::now();
         pt_out->SetLength(256);
         auto dec = pt_out->GetCKKSPackedValue();
 
@@ -424,6 +430,11 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 196 && i < static_cast<int>(dec.size()); ++i) {
             if (std::abs(dec[i].real()) > max_w) { max_w = std::abs(dec[i].real()); argmax = i; }
         }
+        auto ms = [](auto a, auto b) {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+        };
+        std::cerr << "[client] verification=" << ms(t_vfy_start, t_vfy_end)
+                  << "ms  decrypt=" << ms(t_dec_start, t_dec_end) << "ms" << std::endl;
         std::cout << "trained weights: max|w|=" << max_w << " at feature " << argmax
                   << "; sample w[100..103] =";
         for (int i = 100; i < 104 && i < static_cast<int>(dec.size()); ++i) {

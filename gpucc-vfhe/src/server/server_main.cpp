@@ -171,6 +171,10 @@ void handle_client(int client_fd) {
     }
     const Workload& workload = it->second;
 
+    // Deserialize public key, eval keys, and obtain the client crypto context.
+    // ctx= measures the same work as Prototype A: key deserialization + context retrieval.
+    auto t_cc_start = clock::now();
+
     // Deserialize the client's public key FIRST. Its serialization includes an
     // OpenFHE CryptoContext that must be active before eval-key deserialization.
     // We do NOT call workload.make_context() here: that would register a SECOND
@@ -241,10 +245,7 @@ void handle_client(int client_fd) {
         return;
     }
 
-    // Use the client public key's own crypto context for the workload. This is
-    // the single context all deserialized keys are associated with, avoiding a
-    // duplicate context from make_context().
-    auto t_cc_start = clock::now();
+    // Use the client public key's own crypto context for the workload.
     auto cc = client_pk->GetCryptoContext();
     auto t_cc_end = clock::now();
 
