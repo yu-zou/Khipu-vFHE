@@ -244,6 +244,7 @@ void handle_client(int client_fd) {
     auto t_eval_end = clock::now();
 
     std::string output_str;
+    auto t_outser_start = clock::now();
     try {
         output_str = serialize_ciphertext(output_ct);
     } catch (const std::exception& e) {
@@ -254,6 +255,7 @@ void handle_client(int client_fd) {
         } catch (...) {}
         return;
     }
+    auto t_outser_end = clock::now();
     std::vector<uint8_t> output_ct_bytes(output_str.begin(), output_str.end());
 
     // Generate transcript (without timings) and compute hash.
@@ -306,6 +308,7 @@ void handle_client(int client_fd) {
     std::cerr << "[server] workload=" << workload_id
               << "  ctx=" << std::chrono::duration_cast<ms>(t_cc_end - t_cc_start).count() << "ms"
               << "  eval=" << std::chrono::duration_cast<ms>(t_eval_end - t_eval_start).count() << "ms"
+              << "  outser=" << std::chrono::duration_cast<ms>(t_outser_end - t_outser_start).count() << "ms"
               << "  transcript=" << std::chrono::duration_cast<ms>(t_transcript_end - t_transcript_start).count() << "ms"
               << "  quote=" << std::chrono::duration_cast<ms>(t_quote_end - t_quote_start).count() << "ms"
               << std::endl;
