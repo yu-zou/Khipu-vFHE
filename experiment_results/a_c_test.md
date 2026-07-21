@@ -32,7 +32,9 @@ server and client process (same MNIST 1/8 dataset, fresh key pair per run).
  | Eval-key total | Prototype A: 6570 MB, Prototype C: 7920 MB |
 
 Both prototypes use the same serialisation (identical `SerializeEval{Mult,Automorphism}Key`
-Cereal implementations). The Auto-key size difference (6480 vs 7830 MB) comes purely
+Cereal implementations).
+
+The Auto-key size difference (6480 vs 7830 MB) comes purely
 from different rotation-key counts: Prototype C's GPU backend uses base-4 BSGS cascade
 accumulate, which needs ~51 non-power-of-two rotation indices; Prototype A's CPU
 backend uses simple power-of-two accumulate with ~23 indices. Both also include the
@@ -98,32 +100,23 @@ making the ~21× compute speedup the meaningful figure.
 
 ## Raw Measurements (all runs)
 
-### Prototype A
+### Prototype A (tee-vfhe, CPU)
 
-```
-run 1:  ctx=417ms  eval=1862ms  outser=0ms  transcript=5019ms  quote=62ms
+| Run | ctx | eval | outser | transcript | quote | client_verify | Notes |
+|-----|----:|-----:|-------:|-----------:|------:|---------------:|-------|
+| 1 | 417 | 1862 | 0 | 5019 | 62 | 42 | full timing; redundant Sum blob removed |
+| 2 | 399 | 1761 | — | 9822 | 60 | — | original benchmark (3-blob serialisation) |
+| 3 | 396 | 1978 | — | 9814 | 59 | — | original benchmark (3-blob serialisation) |
+| 4 | 397 | 1746 | — | 10013 | 59 | — | original benchmark (3-blob serialisation) |
 
-run 2:  ctx=399ms  eval=1761ms  outser=0ms  transcript=9822ms  quote=60ms
-run 3:  ctx=396ms  eval=1978ms  outser=0ms  transcript=9814ms  quote=59ms
-run 4:  ctx=397ms  eval=1746ms  outser=0ms  transcript=10013ms  quote=59ms
-```
+### Prototype C (gpucc-vfhe, GPU H20)
 
-(Runs 2–4 from the original benchmark before the redundant EvalSumKey blob was
-removed; transcript time dropped from ~9.8 s to ~5.0 s after removal.)
+| Run | ctx | eval | outser | transcript | gpuev | quote | LoadContext | input_up | compute | client_verify | Notes |
+|-----|----:|-----:|-------:|-----------:|------:|------:|------------:|---------:|--------:|--------------:|-------|
+| 1 | 17450 | 24977 | 0 | 6103 | 28 | 60 | 22177 | 336 | 90 | 45 | full timing; widened ctx boundary |
+| 2 | — | 24212 | — | — | — | 60 | 21533 | 331 | 89 | — | old ctx boundary (0ms); pre-transcript-fix |
+| 3 | — | 23751 | — | — | — | 58 | 21073 | 318 | 86 | — | old ctx boundary (0ms); pre-transcript-fix |
+| 4 | — | 23879 | — | — | — | 60 | 21223 | 320 | 88 | — | old ctx boundary (0ms); pre-transcript-fix |
 
-### Prototype C
-
-```
-run 1:  ctx=17450ms  eval=24977ms  outser=0ms  transcript=6103ms  gpuev=28ms  quote=60ms
-        gpu: context+LoadContext=22177ms  input_upload=336ms  compute(2)=90ms
-
-run 2:  ctx=0ms  eval=24212ms  quote=60ms
-        gpu: context+LoadContext=21533ms  input_upload=331ms  compute(2)=89ms
-run 3:  ctx=0ms  eval=23751ms  quote=58ms
-        gpu: context+LoadContext=21073ms  input_upload=318ms  compute(2)=86ms
-run 4:  ctx=0ms  eval=23879ms  quote=60ms
-        gpu: context+LoadContext=21223ms  input_upload=320ms  compute(2)=88ms
-```
-
-(Runs 2–4 from the original benchmark before the ctx timer was widened; their
-`ctx=0ms` reflects the old boundary that only wrapped GetCryptoContext.)
+All times in milliseconds. `LoadContext` = GPU context creation + PCIe key upload.
+`input_up` = ciphertext upload CPU→GPU. `compute` = pure GPU FHE (2 iterations).
