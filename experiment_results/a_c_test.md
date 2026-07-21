@@ -29,12 +29,16 @@ server and client process (same MNIST 1/8 dataset, fresh key pair per run).
 | Input ciphertexts | 21 (10 data + 10 labels + 1 weights) |
 | Output | 1 ciphertext (256 weights) |
 | Eval-key blobs | 2 per prototype (Mult + Auto) |
-| Eval-key total | Prototype A: 6570 MB, Prototype C: 7920 MB |
+ | Eval-key total | Prototype A: 6570 MB, Prototype C: 7920 MB |
 
-Both prototypes serialize eval keys via the same `SerializeEval{Mult,Automorphism}Key`
-implementations (Cereal binary). Size difference comes from different rotation-key
-counts (~72 for A vs ~119 for C, because C uses base-4 BSGS accumulate while A
-uses power-of-two accumulate).
+Both prototypes use the same serialisation (identical `SerializeEval{Mult,Automorphism}Key`
+Cereal implementations). The Auto-key size difference (6480 vs 7830 MB) comes purely
+from different rotation-key counts: Prototype C's GPU backend uses base-4 BSGS cascade
+accumulate, which needs ~51 non-power-of-two rotation indices; Prototype A's CPU
+backend uses simple power-of-two accumulate with ~23 indices. Both also include the
+same bootstrap-internal rotation set (~68 keys from `EvalBootstrapKeyGen(256)`), so the
+total unique counts are ~72 (A) vs ~119 (C). Each key encodes identically; more keys
+→ more bytes.
 
 ## Measurement Results
 
@@ -70,17 +74,15 @@ Timers within the workload:
 | Input upload (21 ciphertexts) | 336 ms |
 | Pure FHE compute (2 iterations) | 90 ms |
 
-### Client-Side Timing (single run)
+### Client Verification Time (single run)
 
-| Phase | Prototype A | Prototype C |
-|-------|------------:|------------:|
-| Verification (transcript + TDX quote) | 42 ms | 45 ms |
-| Decrypt output | 18 ms | 62 ms |
+| Prototype | Verification |
+|-----------|-------------:|
+| A | 42 ms |
+| C | 45 ms |
 
-Verification includes both transcript hash check and TDX quote verification
-(remote Alibaba Cloud attestation). Prototype C's decrypt is slower because
-the ciphertext is received via the SyncCiphertextToCPU path which transfers
-data from GPU device memory.
+Verification includes transcript check + remote Alibaba Cloud attestation call,
+which dominates the ~45 ms figure.
 
 ### Speedup
 
@@ -100,7 +102,6 @@ making the ~21× compute speedup the meaningful figure.
 
 ```
 run 1:  ctx=417ms  eval=1862ms  outser=0ms  transcript=5019ms  quote=62ms
-        [client] verification=42ms  decrypt=18ms
 
 run 2:  ctx=399ms  eval=1761ms  outser=0ms  transcript=9822ms  quote=60ms
 run 3:  ctx=396ms  eval=1978ms  outser=0ms  transcript=9814ms  quote=59ms
@@ -115,7 +116,6 @@ removed; transcript time dropped from ~9.8 s to ~5.0 s after removal.)
 ```
 run 1:  ctx=17450ms  eval=24977ms  outser=0ms  transcript=6103ms  gpuev=28ms  quote=60ms
         gpu: context+LoadContext=22177ms  input_upload=336ms  compute(2)=90ms
-        [client] verification=45ms  decrypt=62ms
 
 run 2:  ctx=0ms  eval=24212ms  quote=60ms
         gpu: context+LoadContext=21533ms  input_upload=331ms  compute(2)=89ms
