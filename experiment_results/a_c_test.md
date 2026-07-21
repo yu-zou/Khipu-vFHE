@@ -88,12 +88,10 @@ power-of-two indices.
 | Min / Max | 1746 / 1978 ms | 23751 / 24212 ms |
 
 > Prototype C's overall `eval=` is dominated by the one-time GPU setup (~22 s).
-independent processes per measurement, so the GPU setup is repeated in every run.
-> A production server would accept multiple TCP connections (each a complete
-> training-run request) within a single process, paying the GPU setup once
-> and amortising it over many evaluations. For pure FHE compute, see the
-> one-time cost amortised over many evaluations. For pure FHE compute, see the
-> separated figures below.
+> Since the benchmark generates fresh keys per run (different KeyTag each time),
+> the GPU context's keys cannot be reused — each run uploads its own keys.
+> The setup is therefore an inseparable part of each FHE evaluation in this
+> configuration. For pure FHE compute, see the separated figures below.
 
 #### GPU-Separated Compute (Prototype C only)
 
@@ -113,19 +111,24 @@ Measured internally within the workload:
 **GPU compute speedup vs CPU: ~20× (1761 ms → 88 ms).**
 
 GPU setup (`LoadContext`, ~22 s) includes:
-1. **GenCryptoContextGPU** — allocate CUDA device memory for the RNS polynomial
+1. **GenCryptoContextGPU** — allocate CUDA device memory for RNS polynomial
    parameters, scramble tables, and work buffers.
-2. **Mult key upload** — extract the relinearization key from OpenFHE's global key
-   map and upload to GPU (~90 MB).
+2. **Mult key upload** — extract the relinearization key from OpenFHE's global
+   key map and upload to GPU (~90 MB over PCIe).
 3. **Rotation key upload** — for each of ~51 rotation indices, extract the
    key-switching key from OpenFHE's global automorphism map and upload to GPU
-   (~8 GB total over PCIe).
-4. **Bootstrap key upload** — extract bootstrap-internal rotation keys and upload
-   124 precomputation plaintexts (~1.5 GB) to GPU.
+   (~8 GB over PCIe).
+4. **Bootstrap key upload** — extract bootstrap-internal rotation keys and
+   upload 124 precomputation plaintexts (~1.5 GB) to GPU.
 
-The setup is CPU memory → GPU device memory transfer over PCIe. If the server
-handled multiple requests in one process, steps 1–4 would be done once and the
-GPU context would be reused for subsequent evaluations.
+**Can the GPU setup be amortised?** Only if the same KeyTag is reused across
+requests. `LoadContext` binds to a specific public key's KeyTag and refuses
+to re-load (returns immediately if `this->loaded`). The current benchmark
+generates fresh keys per run, so each run is a cold start. If the client
+generated keys once and sent N requests with the same key pair, only the
+first would pay ~22 s; subsequent runs would pay only the ~88 ms compute.
+With the current per-run KeyGen, however, every run is independent and the
+setup is inseparable from the FHE measurement.
 
 ### Server Overhead Breakdown (latest single-run timings)
 
