@@ -237,30 +237,31 @@ void send_message(int sock, const std::vector<uint8_t>& payload) {
 }
 
 void send_message(int sock, const uint8_t* data, size_t len) {
-    if (len > 0xFFFFFFFFULL) {
-        throw std::runtime_error("send_message: payload too large (>4GB)");
+    uint64_t orig_len = len;
+    uint8_t net_len[8];
+    for (int i = 7; i >= 0; i--) {
+        net_len[i] = static_cast<uint8_t>(orig_len & 0xFF);
+        orig_len >>= 8;
     }
-    uint32_t net_len = htonl(static_cast<uint32_t>(len));
-    write_all(sock, reinterpret_cast<const uint8_t*>(&net_len),
-              sizeof(net_len));
+    write_all(sock, net_len, 8);
     if (len > 0) {
         write_all(sock, data, len);
     }
 }
 
 std::vector<uint8_t> recv_message(int sock) {
-    uint32_t net_len = 0;
-    size_t got = read_all(sock, reinterpret_cast<uint8_t*>(&net_len),
-                          sizeof(net_len), /*throw_on_eof_mid=*/true);
+    uint8_t net_len[8];
+    size_t got = read_all(sock, net_len, 8, /*throw_on_eof_mid=*/true);
     if (got == 0) {
-        // Shouldn't happen with throw_on_eof_mid=true, but handle defensively:
-        // clean EOF at the very start means peer is done.
         return {};
     }
-    uint32_t len = ntohl(net_len);
-    std::vector<uint8_t> buf(len);
+    uint64_t len = 0;
+    for (int i = 0; i < 8; i++) {
+        len = (len << 8) | net_len[i];
+    }
+    std::vector<uint8_t> buf(static_cast<size_t>(len));
     if (len > 0) {
-        read_all(sock, buf.data(), len, /*throw_on_eof_mid=*/true);
+        read_all(sock, buf.data(), static_cast<size_t>(len), /*throw_on_eof_mid=*/true);
     }
     return buf;
 }

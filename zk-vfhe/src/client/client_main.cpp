@@ -48,7 +48,15 @@ public:
         const uint8_t* p = read(4);
         return (uint32_t(p[0])<<24)|(uint32_t(p[1])<<16)|(uint32_t(p[2])<<8)|uint32_t(p[3]);
     }
-    std::vector<uint8_t> read_blob() { uint32_t n = read_u32_be(); const uint8_t* p = read(n); return {p, p+n}; }
+    std::vector<uint8_t> read_blob() {
+        uint8_t len_bytes[8];
+        std::memcpy(len_bytes, buf_.data() + pos_, 8);
+        pos_ += 8;
+        uint64_t n = 0;
+        for (int i = 0; i < 8; i++) { n = (n << 8) | len_bytes[i]; }
+        const uint8_t* p = read(n);
+        return std::vector<uint8_t>(p, p + n);
+    }
     std::string read_string() { auto v = read_blob(); return std::string(v.begin(), v.end()); }
     size_t remaining() const { return buf_.size() - pos_; }
 private:
@@ -62,7 +70,13 @@ public:
         uint8_t b[4] = { uint8_t(v>>24), uint8_t(v>>16), uint8_t(v>>8), uint8_t(v) };
         buf_.insert(buf_.end(), b, b+4);
     }
-    void write_blob(const uint8_t* d, size_t n) { write_u32_be((uint32_t)n); buf_.insert(buf_.end(), d, d+n); }
+    void write_blob(const uint8_t* d, size_t n) {
+        uint64_t n64 = n;
+        uint8_t len_bytes[8];
+        for (int i = 7; i >= 0; i--) { len_bytes[i] = n64 & 0xFF; n64 >>= 8; }
+        buf_.insert(buf_.end(), len_bytes, len_bytes + 8);
+        buf_.insert(buf_.end(), d, d + n);
+    }
     void write_blob(const std::vector<uint8_t>& v) { write_blob(v.data(), v.size()); }
     void write_string(const std::string& s) { write_blob((const uint8_t*)s.data(), s.size()); }
     const std::vector<uint8_t>& data() const { return buf_; }
