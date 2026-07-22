@@ -84,14 +84,14 @@ medium the ZK proof is verified on the client side.
 E server total = ctx + eval + outser + transcript + quote.
 B server total = input_loading + eval + witness + proof.
 
-| Workload | E server total | B server total | Ratio (B/E) |
-|----------|---------------:|---------------:|------------:|
-| noop | 99691 | 5655 | 0.057 |
-| toy | 102239 | 9948201 | 97.3 |
-| small | 105401 | 20284453 | 192.5 |
-| medium | 104287 | 26228680 | 251.5 |
-| BGV-Add-4K | 99712 | 168908 | 1.69 |
-| BGV-Mul-4K | 101826 | 9892987 | 97.2 |
+| Workload | E server total | B server total | Ratio server (B/E) | E client verify | B client verify | Ratio client (B/E) |
+|----------|---------------:|---------------:|-------------------:|----------------:|----------------:|-------------------:|
+| noop | 99691 | 5655 | 0.057 | 40956 | 0 | 0 |
+| toy | 102239 | 9948201 | 97.3 | 40130 | 1492166 | 37.2 |
+| small | 105401 | 20284453 | 192.5 | 41824 | 2958681 | 70.7 |
+| medium | 104287 | 26228680 | 251.5 | 42218 | 4449598 | 105.4 |
+| BGV-Add-4K | 99712 | 168908 | 1.69 | 40923 | 0 | 0 |
+| BGV-Mul-4K | 101826 | 9892987 | 97.2 | 39897 | 1482548 | 37.2 |
 
 The key comparison is attestation vs. proof overhead: Prototype E's
 transcript + quote generation versus Prototype B's witness + proof generation.
@@ -105,6 +105,16 @@ regardless of circuit complexity. The B/E ratio for toy (97.3×), small
 (192.5×), medium (251.5×), and BGV-Mul-4K (97.2×) shows that ZK proof
 generation is 2–3 orders of magnitude slower than TDX attestation when
 multiplications are present.
+
+The client-side verification story mirrors the server-side trend. Prototype E's
+client verifies the TDX attestation (quote) in approximately constant time
+(~40 ms, median 39.9k–42.2k µs across all workloads). Prototype B's client
+verifies the ZK proof, which scales with circuit complexity: 0 µs for
+add-only workloads (no proof generated), 1.49M µs for toy, 2.96M µs for small,
+4.45M µs for medium, and 1.48M µs for BGV-Mul-4K. The client B/E ratio ranges
+from 37.2× (toy, BGV-Mul-4K) to 105.4× (medium), showing that ZK proof
+verification is 1–2 orders of magnitude slower than TDX attestation
+verification on the client side as well.
 
 ## Raw Measurements (all runs)
 
