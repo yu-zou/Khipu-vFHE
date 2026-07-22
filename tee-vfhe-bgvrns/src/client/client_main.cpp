@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -305,6 +306,7 @@ int main(int argc, char** argv) {
         }
         Hash32 expected_output_ct_hash = blake3_hash(output_ct_bytes);
 
+        auto t_verify_start = std::chrono::steady_clock::now();
         Verifier verifier;
         bool transcript_ok = verifier.verify_transcript(
             transcript, nonce, expected_eval_key_hash,
@@ -319,11 +321,25 @@ int main(int argc, char** argv) {
             quote_bytes, transcript, nonce, expected_mr_td,
             expected_eval_key_hash, expected_input_ct_hashes,
             expected_output_ct_hash);
+        auto t_verify_end = std::chrono::steady_clock::now();
+
         if (!ok) {
             std::cerr << "[client] attestation verification FAILED; refusing to decrypt"
                       << std::endl;
             return 1;
         }
+
+        uint64_t client_verify_us = static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                t_verify_end - t_verify_start).count());
+
+        std::cout << "TIMING: ctx=" << transcript.ctx_us
+                  << " eval=" << transcript.fhe_eval_us
+                  << " outser=" << transcript.outser_us
+                  << " transcript=" << transcript.transcript_us
+                  << " quote=" << transcript.quote_us
+                  << " client_verify=" << client_verify_us
+                  << std::endl;
 
         auto output_ct = deserialize_ciphertext(
             std::string(output_ct_bytes.begin(), output_ct_bytes.end()));
