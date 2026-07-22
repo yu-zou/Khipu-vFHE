@@ -22,6 +22,8 @@ std::string Transcript::to_json() const {
     j["fhe_eval_us"] = fhe_eval_us;
     j["transcript_us"] = transcript_us;
     j["quote_us"] = quote_us;
+    j["ctx_us"] = ctx_us;
+    j["outser_us"] = outser_us;
 
     return j.dump();
 }
@@ -43,6 +45,8 @@ Transcript Transcript::from_json(const std::string& json_str) {
     t.fhe_eval_us = j.value("fhe_eval_us", 0ULL);
     t.transcript_us = j.value("transcript_us", 0ULL);
     t.quote_us = j.value("quote_us", 0ULL);
+    t.ctx_us = j.value("ctx_us", (uint64_t)0);
+    t.outser_us = j.value("outser_us", (uint64_t)0);
 
     return t;
 }

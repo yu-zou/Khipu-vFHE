@@ -28,6 +28,8 @@ struct Transcript {
     uint64_t fhe_eval_us = 0;
     uint64_t transcript_us = 0;
     uint64_t quote_us = 0;
+    uint64_t ctx_us = 0;       // context creation + eval key deserialization
+    uint64_t outser_us = 0;    // output ciphertext serialization
 
     // Serialize to a JSON string.
     std::string to_json() const;

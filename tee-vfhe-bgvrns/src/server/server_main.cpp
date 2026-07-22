@@ -181,7 +181,6 @@ void handle_client(int client_fd) {
 
     auto t_cc_start = clock::now();
     auto cc = workload.make_context();
-    auto t_cc_end = clock::now();
 
     // Deserialize eval keys into the context. Try each key type
     // (mult, sum, automorphism) for each blob; at least one must succeed.
@@ -233,6 +232,7 @@ void handle_client(int client_fd) {
         } catch (...) {}
         return;
     }
+    auto t_cc_end = clock::now();
 
     std::vector<CT> inputs;
     inputs.reserve(input_ct_blobs.size());
@@ -264,6 +264,7 @@ void handle_client(int client_fd) {
     }
     auto t_eval_end = clock::now();
 
+    auto t_outser_start = clock::now();
     std::string output_str;
     try {
         output_str = serialize_ciphertext(output_ct);
@@ -275,6 +276,7 @@ void handle_client(int client_fd) {
         } catch (...) {}
         return;
     }
+    auto t_outser_end = clock::now();
     std::vector<uint8_t> output_ct_bytes(output_str.begin(), output_str.end());
 
     // Generate transcript (without timings) and compute hash.
@@ -290,6 +292,12 @@ void handle_client(int client_fd) {
     transcript.transcript_us = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::microseconds>(
             t_transcript_end - t_transcript_start).count());
+    transcript.ctx_us = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            t_cc_end - t_cc_start).count());
+    transcript.outser_us = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            t_outser_end - t_outser_start).count());
 
     // Compute transcript hash (timings zeroed out internally).
     auto hash = compute_transcript_hash(transcript);
@@ -327,6 +335,7 @@ void handle_client(int client_fd) {
     std::cerr << "[server] workload=" << workload_id
               << "  ctx=" << std::chrono::duration_cast<ms>(t_cc_end - t_cc_start).count() << "ms"
               << "  eval=" << std::chrono::duration_cast<ms>(t_eval_end - t_eval_start).count() << "ms"
+              << "  outser=" << std::chrono::duration_cast<ms>(t_outser_end - t_outser_start).count() << "ms"
               << "  transcript=" << std::chrono::duration_cast<ms>(t_transcript_end - t_transcript_start).count() << "ms"
               << "  quote=" << std::chrono::duration_cast<ms>(t_quote_end - t_quote_start).count() << "ms"
               << std::endl;

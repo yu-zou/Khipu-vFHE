@@ -53,6 +53,8 @@ std::array<uint8_t, 32> compute_transcript_hash(const Transcript& transcript) {
     t_for_hash.fhe_eval_us = 0;
     t_for_hash.transcript_us = 0;
     t_for_hash.quote_us = 0;
+    t_for_hash.ctx_us = 0;
+    t_for_hash.outser_us = 0;
     std::string json_str = t_for_hash.to_json();
     Hash32 h = blake3_hash(json_str);
     std::array<uint8_t, 32> out{};
