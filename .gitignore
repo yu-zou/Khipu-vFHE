@@ -7,6 +7,7 @@
 /.opencode/
 tmp_test/
 test_results/
+/docs/superpowers/
 
 # ============================================================
 # Build artifacts
