@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -20,6 +21,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 #include "client/verifier.h"
 #include "common/hashing.h"
@@ -245,6 +248,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        auto t_verify_start = std::chrono::steady_clock::now();
         bool proof_ok = true;
         if (!proof_bytes.empty() && !vk_bytes.empty() && !pi_bytes.empty()) {
             std::cout << "[client] verifying ZK proof...\n";
@@ -256,9 +260,32 @@ int main(int argc, char** argv) {
             }
             std::cout << "[client] ZK proof verification PASSED\n";
         } else {
-            std::cout << "[client] (ZK proof blobs empty - ZK pipeline not yet wired; "
-                         "decrypting for functional testing)\n";
+            std::cout << "[client] (ZK proof blobs empty - ZK pipeline not exercised for "
+                         "this workload; decrypting for functional testing)\n";
         }
+        auto t_verify_end = std::chrono::steady_clock::now();
+
+        uint64_t client_verify_us = static_cast<uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                t_verify_end - t_verify_start).count());
+
+        uint64_t input_loading_us = 0, fhe_eval_us = 0, witness_us = 0, proof_us = 0;
+        try {
+            auto tj = nlohmann::json::parse(tr_json);
+            input_loading_us = tj.value("input_loading_us", (uint64_t)0);
+            fhe_eval_us = tj.value("fhe_eval_us", (uint64_t)0);
+            witness_us = tj.value("witness_us", (uint64_t)0);
+            proof_us = tj.value("proof_us", (uint64_t)0);
+        } catch (const std::exception& e) {
+            std::cerr << "[client] transcript parse for timing failed: " << e.what() << "\n";
+        }
+
+        std::cout << "TIMING: input_loading=" << input_loading_us
+                  << " eval=" << fhe_eval_us
+                  << " witness=" << witness_us
+                  << " proof=" << proof_us
+                  << " client_verify=" << client_verify_us
+                  << std::endl;
 
         auto out_ct = deserialize_ciphertext(std::string(out_bytes.begin(), out_bytes.end()));
         Plaintext pt_out;
