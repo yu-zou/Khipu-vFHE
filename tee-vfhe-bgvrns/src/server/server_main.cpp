@@ -55,7 +55,11 @@ public:
     }
 
     std::vector<uint8_t> read_blob() {
-        uint32_t n = read_u32_be();
+        uint8_t len_bytes[8];
+        std::memcpy(len_bytes, buf_.data() + pos_, 8);
+        pos_ += 8;
+        uint64_t n = 0;
+        for (int i = 0; i < 8; i++) { n = (n << 8) | len_bytes[i]; }
         const uint8_t* p = read(n);
         return std::vector<uint8_t>(p, p + n);
     }
@@ -86,7 +90,10 @@ public:
     }
 
     void write_blob(const uint8_t* data, size_t n) {
-        write_u32_be(static_cast<uint32_t>(n));
+        uint64_t n64 = n;
+        uint8_t len_bytes[8];
+        for (int i = 7; i >= 0; i--) { len_bytes[i] = n64 & 0xFF; n64 >>= 8; }
+        buf_.insert(buf_.end(), len_bytes, len_bytes + 8);
         buf_.insert(buf_.end(), data, data + n);
     }
 
