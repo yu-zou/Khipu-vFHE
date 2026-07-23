@@ -1,0 +1,13 @@
+{
+  "workload": "ckks_mult_relin_rescale",
+  "keymode": "cold",
+  "source": {"nsys_file": "golden.sqlite", "gpu": "H100 (non-CC)", "fideslib_commit": "b368ba6"},
+  "events": [
+    {"id": 0, "type": "DATA_H2D", "stream": 1, "size_bytes": 1048576, "orig_start_us": 0.0, "orig_dur_us": 45.0, "kernel_name": null},
+    {"id": 1, "type": "DATA_H2D", "stream": 1, "size_bytes": 1048576, "orig_start_us": 45.0, "orig_dur_us": 45.0, "kernel_name": null},
+    {"id": 2, "type": "KERNEL", "stream": 1, "size_bytes": 0, "orig_start_us": 100.0, "orig_dur_us": 500.0, "kernel_name": "ckks_mul", "gpu_time_us": 500.0},
+    {"id": 3, "type": "KERNEL", "stream": 1, "size_bytes": 0, "orig_start_us": 600.0, "orig_dur_us": 60.0, "kernel_name": "relin", "gpu_time_us": 60.0},
+    {"id": 4, "type": "DATA_D2H", "stream": 1, "size_bytes": 524288, "orig_start_us": 700.0, "orig_dur_us": 22.0, "kernel_name": null}
+  ],
+  "barriers": []
+}
