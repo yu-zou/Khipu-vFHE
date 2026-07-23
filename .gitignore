@@ -22,6 +22,14 @@ zk-vfhe/Testing/
 CMakeFiles/
 
 # ============================================================
+# Benchmark generated artifacts
+# ============================================================
+small_benchmarks/aes-gcm/bench
+small_benchmarks/aes-gcm/bench_output.txt
+small_benchmarks/aes-gcm/report.md
+small_benchmarks/aes-gcm/results.csv
+
+# ============================================================
 # Scratch / generated files
 # ============================================================
 *.log
