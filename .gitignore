@@ -56,3 +56,4 @@ thirdparty/libnvat-linux-x86_64-1.2.2.1780962352-archive.tar.xz
 .idea/
 .vscode/
 *.code-workspace
+/simulation
