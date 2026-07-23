@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include <cuda_profiler_api.h>
+#include "cuda_profiler_api.h"
 #include <iostream>
 #include <string>
 #include <cmath>
@@ -11,14 +11,15 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--keymode" && i + 1 < argc) keymode = argv[++i];
 
     auto cc = BuildBootstrapContext();
-    uint32_t numSlots = 1 << 15;  // 32768
+    uint32_t numSlots = 1 << 15;
     std::vector<uint32_t> levelBudget = {3, 3};
     std::vector<uint32_t> bsgsDim = {0, 0};
 
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
     cc->EvalBootstrapSetup(levelBudget, bsgsDim, numSlots, 0);
-    cc->EvalBootstrapKeyGen(keys, numSlots);
+    cc->EvalBootstrapKeyGen(keys.secretKey, numSlots);
+    cc->LoadContext(keys.publicKey);
 
     auto x = SeededVector(numSlots, 1);
     uint32_t depth = 25;
@@ -27,7 +28,6 @@ int main(int argc, char** argv) {
     auto ciph = cc->Encrypt(keys.publicKey, ptxt);
 
     bool warm = (keymode == "warm");
-    cc->LoadContext(keys.publicKey);
     if (warm) { cudaDeviceSynchronize(); cudaProfilerStart(); }
 
     auto after = cc->EvalBootstrap(ciph);

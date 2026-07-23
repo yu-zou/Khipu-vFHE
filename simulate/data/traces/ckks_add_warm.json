@@ -1,0 +1,1654 @@
+{
+  "workload": "ckks_add",
+  "keymode": "warm",
+  "source": {
+    "nsys_file": "/tmp/ckks_add_warm.sqlite",
+    "gpu": "H100 (non-CC)",
+    "fideslib_commit": "b368ba6"
+  },
+  "events": [
+    {
+      "id": 0,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 0.0,
+      "orig_dur_us": 5.024,
+      "kernel_name": null
+    },
+    {
+      "id": 1,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 23.584,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 2,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 54.24,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 3,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 87.52,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 4,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 110.305,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 5,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 131.041,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 6,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 152.033,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 7,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 173.441,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 8,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 278.114,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 9,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 297.25,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 10,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 323.106,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 11,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 351.362,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 12,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 373.506,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 13,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 391.938,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 14,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 411.01,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 15,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 430.339,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 16,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 462.691,
+      "orig_dur_us": 4.704,
+      "kernel_name": null
+    },
+    {
+      "id": 17,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 481.699,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 18,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 507.235,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 19,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 535.203,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 20,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 556.291,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 21,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 575.363,
+      "orig_dur_us": 4.801,
+      "kernel_name": null
+    },
+    {
+      "id": 22,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 594.308,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 23,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 613.252,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 24,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 733.124,
+      "orig_dur_us": 4.737,
+      "kernel_name": null
+    },
+    {
+      "id": 25,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 758.021,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 26,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 793.893,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 27,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 834.725,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 28,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 860.421,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 29,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 883.621,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 30,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 906.854,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 31,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 930.15,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 32,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1020.966,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 33,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1040.55,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 34,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1066.663,
+      "orig_dur_us": 7.136,
+      "kernel_name": null
+    },
+    {
+      "id": 35,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1095.591,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 36,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1117.159,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 37,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1136.295,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 38,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1155.751,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 39,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1175.335,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 40,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1211.623,
+      "orig_dur_us": 4.737,
+      "kernel_name": null
+    },
+    {
+      "id": 41,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1236.04,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 42,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1271.368,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 43,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1309.096,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 44,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1335.208,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 45,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1358.792,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 46,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1382.281,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 47,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1405.705,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 48,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1504.745,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 49,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1532.074,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 50,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1559.594,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 51,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1588.938,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 52,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1610.602,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 53,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1629.674,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 54,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1649.226,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 55,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1668.682,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 56,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1751.115,
+      "orig_dur_us": 1.088,
+      "kernel_name": null
+    },
+    {
+      "id": 57,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1760.651,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 58,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1769.995,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 59,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1778.795,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 60,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1787.467,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 61,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1795.723,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 62,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1804.235,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 63,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1812.747,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 64,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1848.812,
+      "orig_dur_us": 2.848,
+      "kernel_name": null
+    },
+    {
+      "id": 65,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1973.548,
+      "orig_dur_us": 3.04,
+      "kernel_name": null
+    },
+    {
+      "id": 66,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1987.628,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 67,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1994.636,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 68,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 2009.933,
+      "orig_dur_us": 3.296,
+      "kernel_name": null
+    },
+    {
+      "id": 69,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 2025.933,
+      "orig_dur_us": 3.008,
+      "kernel_name": null
+    },
+    {
+      "id": 70,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 2060.845,
+      "orig_dur_us": 7.136,
+      "kernel_name": null
+    },
+    {
+      "id": 71,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 2096.973,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 72,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 2097152,
+      "orig_start_us": 2199.214,
+      "orig_dur_us": 109.728,
+      "kernel_name": null
+    },
+    {
+      "id": 73,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 2097152,
+      "orig_start_us": 2401.423,
+      "orig_dur_us": 109.185,
+      "kernel_name": null
+    },
+    {
+      "id": 74,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 53032,
+      "orig_start_us": 18386.9,
+      "orig_dur_us": 4.576,
+      "kernel_name": null
+    },
+    {
+      "id": 75,
+      "type": "CONTROL_H2D",
+      "stream": 43,
+      "size_bytes": 8,
+      "orig_start_us": 24877.501,
+      "orig_dur_us": 1.088,
+      "kernel_name": null
+    },
+    {
+      "id": 76,
+      "type": "CONTROL_H2D",
+      "stream": 44,
+      "size_bytes": 8,
+      "orig_start_us": 24887.069,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 77,
+      "type": "CONTROL_H2D",
+      "stream": 47,
+      "size_bytes": 8,
+      "orig_start_us": 24912.029,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 78,
+      "type": "CONTROL_H2D",
+      "stream": 48,
+      "size_bytes": 8,
+      "orig_start_us": 24918.781,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 79,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 53032,
+      "orig_start_us": 25502.433,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 80,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 33170.065,
+      "orig_dur_us": 1.088,
+      "kernel_name": null
+    },
+    {
+      "id": 81,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 33180.465,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 82,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 33186.577,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 83,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 33203.154,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 84,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 33218.962,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 85,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 33236.914,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 86,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 33248.882,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 87,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 33258.13,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 88,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 33263.922,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 89,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 33278.93,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 90,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 33294.45,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 91,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 33312.818,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 92,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33339.218,
+      "orig_dur_us": 5.6,
+      "kernel_name": null
+    },
+    {
+      "id": 93,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33353.33,
+      "orig_dur_us": 4.993,
+      "kernel_name": null
+    },
+    {
+      "id": 94,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33371.347,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 95,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33389.107,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 96,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33403.571,
+      "orig_dur_us": 5.056,
+      "kernel_name": null
+    },
+    {
+      "id": 97,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 33417.971,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 98,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33422.995,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 99,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33436.115,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 100,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33449.811,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 101,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33463.635,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 102,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33477.395,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 103,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33494.355,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 104,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33510.867,
+      "orig_dur_us": 4.801,
+      "kernel_name": null
+    },
+    {
+      "id": 105,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33525.012,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 106,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33542.452,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 107,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33559.956,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 108,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33574.58,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 109,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33589.46,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 110,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33605.108,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 111,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33620.724,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 112,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33635.124,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 113,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33649.588,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 114,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33666.132,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 115,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33682.389,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 116,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33700.181,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 117,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33717.717,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 118,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33744.981,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 119,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 33757.941,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 120,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33765.109,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 121,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33780.597,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 122,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33798.965,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 123,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33815.029,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 124,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33830.518,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 125,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33848.374,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 126,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33866.038,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 127,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33880.63,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 128,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33897.558,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 129,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33915.03,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 130,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33931.606,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 131,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33948.022,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 132,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33965.526,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 133,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33982.454,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 134,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33999.863,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 135,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 34016.663,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 136,
+      "type": "CONTROL_H2D",
+      "stream": 22,
+      "size_bytes": 40,
+      "orig_start_us": 58805.427,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 137,
+      "type": "CONTROL_H2D",
+      "stream": 22,
+      "size_bytes": 40,
+      "orig_start_us": 58811.859,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 138,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 58845.715,
+      "orig_dur_us": 4.737,
+      "kernel_name": null
+    },
+    {
+      "id": 139,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 58867.316,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 140,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 58888.052,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 141,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 58909.908,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 142,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 58930.516,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 143,
+      "type": "CONTROL_H2D",
+      "stream": 23,
+      "size_bytes": 40,
+      "orig_start_us": 58962.26,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 144,
+      "type": "CONTROL_H2D",
+      "stream": 23,
+      "size_bytes": 40,
+      "orig_start_us": 58965.172,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 145,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 58989.364,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 146,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 59009.493,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 147,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 59034.165,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 148,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 59057.813,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 149,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 59082.421,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 150,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 40,
+      "orig_start_us": 66492.196,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 151,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 40,
+      "orig_start_us": 66496.1,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 152,
+      "type": "DATA_H2D",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 66525.316,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 153,
+      "type": "DATA_H2D",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 66544.164,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 154,
+      "type": "DATA_H2D",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 66567.62,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 155,
+      "type": "DATA_H2D",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 66590.02,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 156,
+      "type": "DATA_H2D",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 66612.389,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 157,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 40,
+      "orig_start_us": 66639.493,
+      "orig_dur_us": 0.736,
+      "kernel_name": null
+    },
+    {
+      "id": 158,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 40,
+      "orig_start_us": 66642.085,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 159,
+      "type": "DATA_H2D",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 66663.557,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 160,
+      "type": "DATA_H2D",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 66683.205,
+      "orig_dur_us": 4.736,
+      "kernel_name": null
+    },
+    {
+      "id": 161,
+      "type": "DATA_H2D",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 66701.829,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 162,
+      "type": "DATA_H2D",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 66721.381,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 163,
+      "type": "DATA_H2D",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 66747.781,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 164,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 66814.534,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 165,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 66816.998,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 166,
+      "type": "KERNEL",
+      "stream": 26,
+      "size_bytes": 0,
+      "orig_start_us": 66897.254,
+      "orig_dur_us": 2.464,
+      "kernel_name": "copy_",
+      "gpu_time_us": 2.464
+    },
+    {
+      "id": 167,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 66935.751,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 168,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 66938.247,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 169,
+      "type": "KERNEL",
+      "stream": 27,
+      "size_bytes": 0,
+      "orig_start_us": 66947.911,
+      "orig_dur_us": 2.144,
+      "kernel_name": "copy_",
+      "gpu_time_us": 2.144
+    },
+    {
+      "id": 170,
+      "type": "KERNEL",
+      "stream": 26,
+      "size_bytes": 0,
+      "orig_start_us": 66974.535,
+      "orig_dur_us": 2.368,
+      "kernel_name": "add_",
+      "gpu_time_us": 2.368
+    },
+    {
+      "id": 171,
+      "type": "KERNEL",
+      "stream": 27,
+      "size_bytes": 0,
+      "orig_start_us": 66984.775,
+      "orig_dur_us": 2.176,
+      "kernel_name": "add_",
+      "gpu_time_us": 2.176
+    },
+    {
+      "id": 172,
+      "type": "DATA_D2H",
+      "stream": 26,
+      "size_bytes": 131072,
+      "orig_start_us": 67107.848,
+      "orig_dur_us": 4.16,
+      "kernel_name": null
+    },
+    {
+      "id": 173,
+      "type": "DATA_D2H",
+      "stream": 26,
+      "size_bytes": 131072,
+      "orig_start_us": 67151.496,
+      "orig_dur_us": 4.064,
+      "kernel_name": null
+    },
+    {
+      "id": 174,
+      "type": "DATA_D2H",
+      "stream": 26,
+      "size_bytes": 131072,
+      "orig_start_us": 67183.08,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 175,
+      "type": "DATA_D2H",
+      "stream": 26,
+      "size_bytes": 131072,
+      "orig_start_us": 67215.4,
+      "orig_dur_us": 4.0,
+      "kernel_name": null
+    },
+    {
+      "id": 176,
+      "type": "DATA_D2H",
+      "stream": 26,
+      "size_bytes": 131072,
+      "orig_start_us": 67248.553,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 177,
+      "type": "DATA_D2H",
+      "stream": 27,
+      "size_bytes": 131072,
+      "orig_start_us": 67288.169,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 178,
+      "type": "DATA_D2H",
+      "stream": 27,
+      "size_bytes": 131072,
+      "orig_start_us": 67320.361,
+      "orig_dur_us": 4.064,
+      "kernel_name": null
+    },
+    {
+      "id": 179,
+      "type": "DATA_D2H",
+      "stream": 27,
+      "size_bytes": 131072,
+      "orig_start_us": 67359.241,
+      "orig_dur_us": 4.064,
+      "kernel_name": null
+    },
+    {
+      "id": 180,
+      "type": "DATA_D2H",
+      "stream": 27,
+      "size_bytes": 131072,
+      "orig_start_us": 67391.273,
+      "orig_dur_us": 4.032,
+      "kernel_name": null
+    },
+    {
+      "id": 181,
+      "type": "DATA_D2H",
+      "stream": 27,
+      "size_bytes": 131072,
+      "orig_start_us": 67425.098,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    }
+  ],
+  "barriers": []
+}

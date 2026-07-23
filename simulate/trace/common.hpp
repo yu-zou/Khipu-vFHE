@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <cuda_runtime.h>
 
 using namespace fideslib;
 

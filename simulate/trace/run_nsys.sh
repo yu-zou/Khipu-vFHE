@@ -12,16 +12,13 @@ declare -A BIN=( [ckks_add]=bench_add [ckks_mult_relin_rescale]=bench_mult
 for wl in "${!BIN[@]}"; do
   for km in cold warm; do
     rep="/tmp/${wl}_${km}"
-    if [ "$km" = "warm" ]; then
-      nsys profile --trace=cuda --capture-range=cudaProfilerApi \
-        --force-overwrite=true -o "$rep" "$BUILD/${BIN[$wl]}" --keymode warm
-    else
-      nsys profile --trace=cuda --force-overwrite=true -o "$rep" \
-        "$BUILD/${BIN[$wl]}" --keymode cold
-    fi
+    # CUDA 13 removed cudaProfilerApi; capture full process for both modes
+    nsys profile --trace=cuda --force-overwrite=true -o "$rep" \
+      "$BUILD/${BIN[$wl]}" --keymode $km
     nsys export --type=sqlite --force-overwrite=true -o "${rep}.sqlite" "${rep}.nsys-rep"
-    python parse_nsys.py --sqlite "${rep}.sqlite" --workload "$wl" --keymode "$km" \
-      --out "$OUT/${wl}_${km}.json"
+    eval "$(/opt/conda/bin/conda shell.bash hook)"
+    conda run -n prototype-d python parse_nsys.py --sqlite "${rep}.sqlite" --workload "$wl" \
+      --keymode "$km" --out "$OUT/${wl}_${km}.json"
     echo "wrote $OUT/${wl}_${km}.json"
   done
 done

@@ -1,0 +1,2607 @@
+{
+  "workload": "ckks_rotate",
+  "keymode": "cold",
+  "source": {
+    "nsys_file": "/tmp/ckks_rotate_cold.sqlite",
+    "gpu": "H100 (non-CC)",
+    "fideslib_commit": "b368ba6"
+  },
+  "events": [
+    {
+      "id": 0,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 0.0,
+      "orig_dur_us": 5.056,
+      "kernel_name": null
+    },
+    {
+      "id": 1,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 22.24,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 2,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 61.664,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 3,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 95.968,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 4,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 118.625,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 5,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 139.073,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 6,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 159.969,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 7,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 180.769,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 8,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 292.29,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 9,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 311.682,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 10,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 337.25,
+      "orig_dur_us": 7.264,
+      "kernel_name": null
+    },
+    {
+      "id": 11,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 364.898,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 12,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 386.882,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 13,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 405.314,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 14,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 424.354,
+      "orig_dur_us": 4.833,
+      "kernel_name": null
+    },
+    {
+      "id": 15,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 443.267,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 16,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 475.267,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 17,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 494.179,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 18,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 521.283,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 19,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 549.859,
+      "orig_dur_us": 7.264,
+      "kernel_name": null
+    },
+    {
+      "id": 20,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 571.203,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 21,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 589.412,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 22,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 608.612,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 23,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 628.196,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 24,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 743.013,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 25,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 762.437,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 26,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 788.869,
+      "orig_dur_us": 7.2,
+      "kernel_name": null
+    },
+    {
+      "id": 27,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 817.669,
+      "orig_dur_us": 7.296,
+      "kernel_name": null
+    },
+    {
+      "id": 28,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 838.853,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 29,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 857.797,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 30,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 876.901,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 31,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 895.813,
+      "orig_dur_us": 4.833,
+      "kernel_name": null
+    },
+    {
+      "id": 32,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 990.086,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 33,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1009.542,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 34,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1035.334,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 35,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1068.647,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 36,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1090.151,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 37,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1109.191,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 38,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1128.391,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 39,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1148.007,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 40,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1184.135,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 41,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1208.839,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 42,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1252.104,
+      "orig_dur_us": 7.328,
+      "kernel_name": null
+    },
+    {
+      "id": 43,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1289.928,
+      "orig_dur_us": 7.296,
+      "kernel_name": null
+    },
+    {
+      "id": 44,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1316.456,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 45,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1340.36,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 46,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1364.2,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 47,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1388.009,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 48,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1489.801,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 49,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1509.705,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 50,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1536.298,
+      "orig_dur_us": 7.168,
+      "kernel_name": null
+    },
+    {
+      "id": 51,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 1564.714,
+      "orig_dur_us": 7.264,
+      "kernel_name": null
+    },
+    {
+      "id": 52,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1586.378,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 53,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1605.13,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 54,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1624.202,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 55,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 1643.242,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 56,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1722.059,
+      "orig_dur_us": 1.12,
+      "kernel_name": null
+    },
+    {
+      "id": 57,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1731.659,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 58,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1740.843,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 59,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1749.995,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 60,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1758.699,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 61,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1767.211,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 62,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1775.979,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 63,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1784.747,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 64,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1820.171,
+      "orig_dur_us": 3.2,
+      "kernel_name": null
+    },
+    {
+      "id": 65,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1943.884,
+      "orig_dur_us": 3.104,
+      "kernel_name": null
+    },
+    {
+      "id": 66,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1958.124,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 67,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 1965.676,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 68,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1981.484,
+      "orig_dur_us": 3.328,
+      "kernel_name": null
+    },
+    {
+      "id": 69,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 32768,
+      "orig_start_us": 1997.548,
+      "orig_dur_us": 2.976,
+      "kernel_name": null
+    },
+    {
+      "id": 70,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 2031.661,
+      "orig_dur_us": 7.264,
+      "kernel_name": null
+    },
+    {
+      "id": 71,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 262144,
+      "orig_start_us": 2074.093,
+      "orig_dur_us": 7.232,
+      "kernel_name": null
+    },
+    {
+      "id": 72,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 2097152,
+      "orig_start_us": 2173.07,
+      "orig_dur_us": 106.944,
+      "kernel_name": null
+    },
+    {
+      "id": 73,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 2097152,
+      "orig_start_us": 2369.071,
+      "orig_dur_us": 105.664,
+      "kernel_name": null
+    },
+    {
+      "id": 74,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 53032,
+      "orig_start_us": 18131.922,
+      "orig_dur_us": 4.96,
+      "kernel_name": null
+    },
+    {
+      "id": 75,
+      "type": "CONTROL_H2D",
+      "stream": 43,
+      "size_bytes": 8,
+      "orig_start_us": 24314.361,
+      "orig_dur_us": 1.056,
+      "kernel_name": null
+    },
+    {
+      "id": 76,
+      "type": "CONTROL_H2D",
+      "stream": 44,
+      "size_bytes": 8,
+      "orig_start_us": 24322.937,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 77,
+      "type": "CONTROL_H2D",
+      "stream": 47,
+      "size_bytes": 8,
+      "orig_start_us": 24345.721,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 78,
+      "type": "CONTROL_H2D",
+      "stream": 48,
+      "size_bytes": 8,
+      "orig_start_us": 24352.601,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 79,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 53032,
+      "orig_start_us": 24886.141,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 80,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 32424.812,
+      "orig_dur_us": 1.088,
+      "kernel_name": null
+    },
+    {
+      "id": 81,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 32435.244,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 82,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 32441.485,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 83,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 32457.645,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 84,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 32473.677,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 85,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 32492.077,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 86,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 32504.749,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 87,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 32514.189,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 88,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 32520.109,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 89,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 32535.661,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 90,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 32551.437,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 91,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 32570.125,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 92,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32594.029,
+      "orig_dur_us": 5.697,
+      "kernel_name": null
+    },
+    {
+      "id": 93,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32617.07,
+      "orig_dur_us": 5.056,
+      "kernel_name": null
+    },
+    {
+      "id": 94,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32634.894,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 95,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32652.398,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 96,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32666.062,
+      "orig_dur_us": 5.248,
+      "kernel_name": null
+    },
+    {
+      "id": 97,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 32680.494,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 98,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32685.582,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 99,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32698.734,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 100,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32712.43,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 101,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32725.838,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 102,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32739.63,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 103,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32756.143,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 104,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32772.399,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 105,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32786.031,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 106,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32802.959,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 107,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32819.823,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 108,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32834.383,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 109,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32849.743,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 110,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32866.127,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 111,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32881.679,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 112,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32896.143,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 113,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32910.287,
+      "orig_dur_us": 4.865,
+      "kernel_name": null
+    },
+    {
+      "id": 114,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32926.224,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 115,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32941.84,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 116,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32959.024,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 117,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32976.144,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 118,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 32993.552,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 119,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 33007.152,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 120,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33013.776,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 121,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33028.144,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 122,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33043.248,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 123,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33067.12,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 124,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33082.737,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 125,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33101.009,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 126,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33118.481,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 127,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33132.817,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 128,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33149.585,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 129,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33166.833,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 130,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33183.249,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 131,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33199.665,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 132,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33216.817,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 133,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33233.97,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 134,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33250.738,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 135,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 33268.082,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 136,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 35581.472,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 137,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 35591.616,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 138,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 35597.792,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 139,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 35614.017,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 140,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 35629.825,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 141,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 35647.969,
+      "orig_dur_us": 0.736,
+      "kernel_name": null
+    },
+    {
+      "id": 142,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 35659.617,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 143,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 16,
+      "orig_start_us": 35668.769,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 144,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 8,
+      "orig_start_us": 35674.593,
+      "orig_dur_us": 0.736,
+      "kernel_name": null
+    },
+    {
+      "id": 145,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 35690.113,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 146,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 40,
+      "orig_start_us": 35705.985,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 147,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 48,
+      "orig_start_us": 35723.585,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 148,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35742.529,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 149,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35756.961,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 150,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35771.042,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 151,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35784.738,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 152,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35798.562,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 153,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 35811.906,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 154,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35816.77,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 155,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35830.21,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 156,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35843.874,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 157,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35857.602,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 158,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35871.362,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 159,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35884.834,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 160,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35898.562,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 161,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35912.386,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 162,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35925.795,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 163,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35939.395,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 164,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35953.443,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 165,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35968.227,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 166,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35981.923,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 167,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 35995.875,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 168,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36009.347,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 169,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36022.979,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 170,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36038.819,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 171,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36059.427,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 172,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36076.771,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 173,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36093.316,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 174,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36109.316,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 175,
+      "type": "CONTROL_H2D",
+      "stream": 7,
+      "size_bytes": 512,
+      "orig_start_us": 36122.18,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 176,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36127.172,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 177,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36142.052,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 178,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36156.708,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 179,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36171.012,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 180,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36185.092,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 181,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36200.804,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 182,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36216.644,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 183,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36232.068,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 184,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36248.133,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 185,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36264.837,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 186,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36281.573,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 187,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36298.213,
+      "orig_dur_us": 4.928,
+      "kernel_name": null
+    },
+    {
+      "id": 188,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36313.669,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 189,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36329.253,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 190,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36344.293,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 191,
+      "type": "DATA_H2D",
+      "stream": 7,
+      "size_bytes": 131072,
+      "orig_start_us": 36360.005,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 192,
+      "type": "CONTROL_H2D",
+      "stream": 22,
+      "size_bytes": 40,
+      "orig_start_us": 50589.055,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 193,
+      "type": "CONTROL_H2D",
+      "stream": 22,
+      "size_bytes": 40,
+      "orig_start_us": 50593.311,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 194,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 50620.383,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 195,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 50644.959,
+      "orig_dur_us": 4.8,
+      "kernel_name": null
+    },
+    {
+      "id": 196,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 50667.776,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 197,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 50690.24,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 198,
+      "type": "DATA_H2D",
+      "stream": 22,
+      "size_bytes": 131072,
+      "orig_start_us": 50714.912,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 199,
+      "type": "CONTROL_H2D",
+      "stream": 23,
+      "size_bytes": 40,
+      "orig_start_us": 50744.32,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 200,
+      "type": "CONTROL_H2D",
+      "stream": 23,
+      "size_bytes": 40,
+      "orig_start_us": 50747.104,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 201,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 50769.536,
+      "orig_dur_us": 4.896,
+      "kernel_name": null
+    },
+    {
+      "id": 202,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 50789.312,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 203,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 50809.344,
+      "orig_dur_us": 4.832,
+      "kernel_name": null
+    },
+    {
+      "id": 204,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 50828.705,
+      "orig_dur_us": 4.768,
+      "kernel_name": null
+    },
+    {
+      "id": 205,
+      "type": "DATA_H2D",
+      "stream": 23,
+      "size_bytes": 131072,
+      "orig_start_us": 50849.121,
+      "orig_dur_us": 4.864,
+      "kernel_name": null
+    },
+    {
+      "id": 206,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 40,
+      "orig_start_us": 50918.113,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 207,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 40,
+      "orig_start_us": 50920.545,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 208,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 50987.138,
+      "orig_dur_us": 2.496,
+      "kernel_name": "copy_",
+      "gpu_time_us": 2.496
+    },
+    {
+      "id": 209,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 40,
+      "orig_start_us": 51043.33,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 210,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 40,
+      "orig_start_us": 51054.306,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 211,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 51065.346,
+      "orig_dur_us": 2.016,
+      "kernel_name": "copy_",
+      "gpu_time_us": 2.016
+    },
+    {
+      "id": 212,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 51116.098,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 213,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 51118.69,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 214,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 16,
+      "orig_start_us": 51129.762,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 215,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 16,
+      "orig_start_us": 51141.379,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 216,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 8,
+      "orig_start_us": 51148.035,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 217,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 51150.563,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 218,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 51167.939,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 219,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 40,
+      "orig_start_us": 51185.219,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 220,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 48,
+      "orig_start_us": 51206.339,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 221,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 16,
+      "orig_start_us": 51221.443,
+      "orig_dur_us": 0.736,
+      "kernel_name": null
+    },
+    {
+      "id": 222,
+      "type": "CONTROL_H2D",
+      "stream": 26,
+      "size_bytes": 16,
+      "orig_start_us": 51224.259,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 223,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 51271.715,
+      "orig_dur_us": 1.408,
+      "kernel_name": null
+    },
+    {
+      "id": 224,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 51274.467,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 225,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 16,
+      "orig_start_us": 51284.803,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 226,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 16,
+      "orig_start_us": 51294.115,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 227,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 8,
+      "orig_start_us": 51300.42,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 228,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 51303.044,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 229,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 51320.164,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 230,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 40,
+      "orig_start_us": 51336.708,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 231,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 48,
+      "orig_start_us": 51356.996,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 232,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 16,
+      "orig_start_us": 51372.42,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 233,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 16,
+      "orig_start_us": 51374.98,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 234,
+      "type": "KERNEL",
+      "stream": 27,
+      "size_bytes": 0,
+      "orig_start_us": 51381.892,
+      "orig_dur_us": 1.856,
+      "kernel_name": "copy_",
+      "gpu_time_us": 1.856
+    },
+    {
+      "id": 235,
+      "type": "KERNEL",
+      "stream": 13,
+      "size_bytes": 0,
+      "orig_start_us": 51538.053,
+      "orig_dur_us": 4.768,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 4.768
+    },
+    {
+      "id": 236,
+      "type": "KERNEL",
+      "stream": 13,
+      "size_bytes": 0,
+      "orig_start_us": 51589.925,
+      "orig_dur_us": 7.968,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 7.968
+    },
+    {
+      "id": 237,
+      "type": "KERNEL",
+      "stream": 13,
+      "size_bytes": 0,
+      "orig_start_us": 51613.925,
+      "orig_dur_us": 6.465,
+      "kernel_name": "DecompAndModUpConv",
+      "gpu_time_us": 6.465
+    },
+    {
+      "id": 238,
+      "type": "KERNEL",
+      "stream": 13,
+      "size_bytes": 0,
+      "orig_start_us": 51667.686,
+      "orig_dur_us": 8.672,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 8.672
+    },
+    {
+      "id": 239,
+      "type": "KERNEL",
+      "stream": 13,
+      "size_bytes": 0,
+      "orig_start_us": 51824.743,
+      "orig_dur_us": 5.408,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 5.408
+    },
+    {
+      "id": 240,
+      "type": "KERNEL",
+      "stream": 15,
+      "size_bytes": 0,
+      "orig_start_us": 51831.591,
+      "orig_dur_us": 4.64,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 4.64
+    },
+    {
+      "id": 241,
+      "type": "KERNEL",
+      "stream": 15,
+      "size_bytes": 0,
+      "orig_start_us": 51837.639,
+      "orig_dur_us": 7.84,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 7.84
+    },
+    {
+      "id": 242,
+      "type": "KERNEL",
+      "stream": 15,
+      "size_bytes": 0,
+      "orig_start_us": 51846.631,
+      "orig_dur_us": 6.496,
+      "kernel_name": "DecompAndModUpConv",
+      "gpu_time_us": 6.496
+    },
+    {
+      "id": 243,
+      "type": "KERNEL",
+      "stream": 15,
+      "size_bytes": 0,
+      "orig_start_us": 51856.039,
+      "orig_dur_us": 8.704,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 8.704
+    },
+    {
+      "id": 244,
+      "type": "KERNEL",
+      "stream": 15,
+      "size_bytes": 0,
+      "orig_start_us": 51866.087,
+      "orig_dur_us": 5.056,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 5.056
+    },
+    {
+      "id": 245,
+      "type": "KERNEL",
+      "stream": 17,
+      "size_bytes": 0,
+      "orig_start_us": 51870.279,
+      "orig_dur_us": 17.792,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 17.792
+    },
+    {
+      "id": 246,
+      "type": "KERNEL",
+      "stream": 17,
+      "size_bytes": 0,
+      "orig_start_us": 51889.479,
+      "orig_dur_us": 7.776,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 7.776
+    },
+    {
+      "id": 247,
+      "type": "KERNEL",
+      "stream": 17,
+      "size_bytes": 0,
+      "orig_start_us": 51898.471,
+      "orig_dur_us": 5.568,
+      "kernel_name": "DecompAndModUpConv",
+      "gpu_time_us": 5.568
+    },
+    {
+      "id": 248,
+      "type": "KERNEL",
+      "stream": 17,
+      "size_bytes": 0,
+      "orig_start_us": 51905.223,
+      "orig_dur_us": 8.288,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 8.288
+    },
+    {
+      "id": 249,
+      "type": "KERNEL",
+      "stream": 17,
+      "size_bytes": 0,
+      "orig_start_us": 51915.655,
+      "orig_dur_us": 4.768,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 4.768
+    },
+    {
+      "id": 250,
+      "type": "KERNEL",
+      "stream": 26,
+      "size_bytes": 0,
+      "orig_start_us": 51921.607,
+      "orig_dur_us": 1.888,
+      "kernel_name": "copy_",
+      "gpu_time_us": 1.888
+    },
+    {
+      "id": 251,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 16,
+      "orig_start_us": 51932.359,
+      "orig_dur_us": 0.833,
+      "kernel_name": null
+    },
+    {
+      "id": 252,
+      "type": "CONTROL_H2D",
+      "stream": 24,
+      "size_bytes": 16,
+      "orig_start_us": 51935.464,
+      "orig_dur_us": 0.864,
+      "kernel_name": null
+    },
+    {
+      "id": 253,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 16,
+      "orig_start_us": 51952.616,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 254,
+      "type": "CONTROL_H2D",
+      "stream": 25,
+      "size_bytes": 16,
+      "orig_start_us": 51955.016,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 255,
+      "type": "CONTROL_H2D",
+      "stream": 27,
+      "size_bytes": 328,
+      "orig_start_us": 51978.856,
+      "orig_dur_us": 1.024,
+      "kernel_name": null
+    },
+    {
+      "id": 256,
+      "type": "KERNEL",
+      "stream": 27,
+      "size_bytes": 0,
+      "orig_start_us": 52015.72,
+      "orig_dur_us": 9.024,
+      "kernel_name": "hoistedRotateDotKSK_2_",
+      "gpu_time_us": 9.024
+    },
+    {
+      "id": 257,
+      "type": "CONTROL_H2D",
+      "stream": 28,
+      "size_bytes": 40,
+      "orig_start_us": 52075.112,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 258,
+      "type": "CONTROL_H2D",
+      "stream": 28,
+      "size_bytes": 40,
+      "orig_start_us": 52077.768,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 259,
+      "type": "CONTROL_H2D",
+      "stream": 28,
+      "size_bytes": 16,
+      "orig_start_us": 52095.081,
+      "orig_dur_us": 0.768,
+      "kernel_name": null
+    },
+    {
+      "id": 260,
+      "type": "CONTROL_H2D",
+      "stream": 28,
+      "size_bytes": 16,
+      "orig_start_us": 52097.961,
+      "orig_dur_us": 0.8,
+      "kernel_name": null
+    },
+    {
+      "id": 261,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 52108.009,
+      "orig_dur_us": 4.672,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 4.672
+    },
+    {
+      "id": 262,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 52113.993,
+      "orig_dur_us": 7.872,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 7.872
+    },
+    {
+      "id": 263,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 52140.297,
+      "orig_dur_us": 5.088,
+      "kernel_name": "ModDown2",
+      "gpu_time_us": 5.088
+    },
+    {
+      "id": 264,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 52187.177,
+      "orig_dur_us": 8.352,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 8.352
+    },
+    {
+      "id": 265,
+      "type": "KERNEL",
+      "stream": 24,
+      "size_bytes": 0,
+      "orig_start_us": 52216.937,
+      "orig_dur_us": 5.472,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 5.472
+    },
+    {
+      "id": 266,
+      "type": "CONTROL_H2D",
+      "stream": 29,
+      "size_bytes": 40,
+      "orig_start_us": 52261.098,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 267,
+      "type": "CONTROL_H2D",
+      "stream": 29,
+      "size_bytes": 40,
+      "orig_start_us": 52263.626,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 268,
+      "type": "CONTROL_H2D",
+      "stream": 29,
+      "size_bytes": 16,
+      "orig_start_us": 52370.986,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 269,
+      "type": "CONTROL_H2D",
+      "stream": 29,
+      "size_bytes": 16,
+      "orig_start_us": 52374.154,
+      "orig_dur_us": 0.832,
+      "kernel_name": null
+    },
+    {
+      "id": 270,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 52386.89,
+      "orig_dur_us": 4.544,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 4.544
+    },
+    {
+      "id": 271,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 52393.034,
+      "orig_dur_us": 7.712,
+      "kernel_name": "INTT_",
+      "gpu_time_us": 7.712
+    },
+    {
+      "id": 272,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 52402.218,
+      "orig_dur_us": 5.28,
+      "kernel_name": "ModDown2",
+      "gpu_time_us": 5.28
+    },
+    {
+      "id": 273,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 52408.811,
+      "orig_dur_us": 8.384,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 8.384
+    },
+    {
+      "id": 274,
+      "type": "KERNEL",
+      "stream": 25,
+      "size_bytes": 0,
+      "orig_start_us": 52418.539,
+      "orig_dur_us": 5.472,
+      "kernel_name": "NTT_",
+      "gpu_time_us": 5.472
+    },
+    {
+      "id": 275,
+      "type": "DATA_D2H",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 52547.531,
+      "orig_dur_us": 4.384,
+      "kernel_name": null
+    },
+    {
+      "id": 276,
+      "type": "DATA_D2H",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 52589.516,
+      "orig_dur_us": 4.192,
+      "kernel_name": null
+    },
+    {
+      "id": 277,
+      "type": "DATA_D2H",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 52628.556,
+      "orig_dur_us": 4.0,
+      "kernel_name": null
+    },
+    {
+      "id": 278,
+      "type": "DATA_D2H",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 52664.492,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 279,
+      "type": "DATA_D2H",
+      "stream": 24,
+      "size_bytes": 131072,
+      "orig_start_us": 52707.084,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 280,
+      "type": "DATA_D2H",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 52742.925,
+      "orig_dur_us": 4.032,
+      "kernel_name": null
+    },
+    {
+      "id": 281,
+      "type": "DATA_D2H",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 52789.965,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 282,
+      "type": "DATA_D2H",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 52823.533,
+      "orig_dur_us": 4.0,
+      "kernel_name": null
+    },
+    {
+      "id": 283,
+      "type": "DATA_D2H",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 52862.189,
+      "orig_dur_us": 4.096,
+      "kernel_name": null
+    },
+    {
+      "id": 284,
+      "type": "DATA_D2H",
+      "stream": 25,
+      "size_bytes": 131072,
+      "orig_start_us": 52899.822,
+      "orig_dur_us": 4.032,
+      "kernel_name": null
+    }
+  ],
+  "barriers": []
+}

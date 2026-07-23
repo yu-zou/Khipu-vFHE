@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include <cuda_profiler_api.h>
+#include "cuda_profiler_api.h"
 #include <iostream>
 #include <string>
 
@@ -11,6 +11,7 @@ int main(int argc, char** argv) {
     auto cc = BuildLightContext();
     auto keys = cc->KeyGen();
     cc->EvalMultKeyGen(keys.secretKey);
+    cc->LoadContext(keys.publicKey);
 
     auto x1 = SeededVector(1 << 13, 1);
     auto x2 = SeededVector(1 << 13, 2);
@@ -20,8 +21,7 @@ int main(int argc, char** argv) {
     auto c2 = cc->Encrypt(keys.publicKey, p2);
 
     bool warm = (keymode == "warm");
-    if (warm) { cc->LoadContext(keys.publicKey); cudaDeviceSynchronize(); cudaProfilerStart(); }
-    else { cc->LoadContext(keys.publicKey); }
+    if (warm) { cudaDeviceSynchronize(); cudaProfilerStart(); }
 
     auto cAdd = cc->EvalAdd(c1, c2);
     cudaDeviceSynchronize();

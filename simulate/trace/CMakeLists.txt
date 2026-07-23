@@ -14,5 +14,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FIDESLIB_CXX_FLAGS}")
 
 foreach(bench add mult rotate bootstrap)
     add_executable(bench_${bench} bench_${bench}.cpp)
+    target_include_directories(bench_${bench} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(bench_${bench} PRIVATE fideslib::fideslib CUDA::cudart)
 endforeach()
