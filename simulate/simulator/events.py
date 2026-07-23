@@ -41,7 +41,7 @@ class Trace:
     workload: str
     keymode: str
     source: dict
-    events: list = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
 
 
 def load_trace(path: str) -> Trace:
