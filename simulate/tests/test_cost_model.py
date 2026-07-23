@@ -38,6 +38,10 @@ def test_none_mode_zeroes_crypto_and_swiotlb():
     assert none.swiotlb_us(1 << 20, "h2d") == 0.0
     assert none.gpu_crypto_us(1 << 20, "h2d") == 0.0
     assert none.pcie_us(1 << 20, "h2d") > 0.0
+    # gpu_compute is untouched by secmode
+    from simulator.events import Event
+    e = Event(0, "KERNEL", 1, 0, 0.0, 0.0, gpu_time_us=42.0)
+    assert none.gpu_compute_us(e) == 42.0
 
 
 def test_gpu_crypto_pcie_line_rate_equals_pcie():
