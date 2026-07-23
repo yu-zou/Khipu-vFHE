@@ -42,7 +42,10 @@ def aggregate(results_dir: str):
     rows = []
     for path in sorted(glob.glob(os.path.join(results_dir, "*.json"))):
         with open(path) as f:
-            rows.append(_row(json.load(f)))
+            d = json.load(f)
+        if "stage_breakdown_us" not in d:
+            continue
+        rows.append(_row(d))
     return rows
 
 
