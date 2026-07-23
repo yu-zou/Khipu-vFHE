@@ -21,7 +21,8 @@ def single_stream_trace():
 
 def test_gmac_no_slower_than_aes_gcm():
     tr = single_stream_trace()
-    p = json.load(open("tests/fixtures/tiny_params.json"))
+    with open("tests/fixtures/tiny_params.json") as f:
+        p = json.load(f)
     aes = simulate_trace(tr, CostModel(p, "aes-gcm"))
     gmac = simulate_trace(tr, CostModel(p, "gmac"))
     assert gmac.end_to_end_us <= aes.end_to_end_us
@@ -29,17 +30,22 @@ def test_gmac_no_slower_than_aes_gcm():
 
 def test_single_stream_serializes():
     # two H2D on same stream: total >= sum of their cpu_crypto (serialized)
-    p = json.load(open("tests/fixtures/tiny_params.json"))
+    with open("tests/fixtures/tiny_params.json") as f:
+        p = json.load(f)
     evs = [
         Event(0, EventType.DATA_H2D, 1, 1 << 20, 0.0, 0.0),
         Event(1, EventType.DATA_H2D, 1, 1 << 20, 1.0, 0.0),
     ]
     res = simulate_trace(Trace("w", "warm", {}, evs), CostModel(p, "aes-gcm"))
     assert res.end_to_end_us > 0
+    # verify serialization — end-to-end must be at least sum of CPU crypto
+    min_serial = sum(CostModel(p, "aes-gcm").cpu_crypto_us(1 << 20) for _ in evs)
+    assert res.end_to_end_us >= min_serial, f"serialized stream too fast: {res.end_to_end_us} < {min_serial}"
 
 
 def test_two_streams_overlap_beats_serial():
-    p = json.load(open("tests/fixtures/tiny_params.json"))
+    with open("tests/fixtures/tiny_params.json") as f:
+        p = json.load(f)
     same = [
         Event(0, EventType.DATA_H2D, 1, 1 << 20, 0.0, 0.0),
         Event(1, EventType.DATA_H2D, 1, 1 << 20, 0.0, 0.0),
@@ -60,6 +66,11 @@ def test_result_fields_present():
     assert "gpu_compute" in res.stage_breakdown_us
     assert res.totals["n_kernels"] == 1
     assert 0.0 <= res.resource_utilization[CPU_CRYPTO] <= 1.0
+    assert res.comms_us >= 0
+    assert res.compute_us > 0
+    assert res.comms_compute_ratio >= 0
+    assert res.totals["h2d_bytes"] >= 0
+    assert res.totals["d2h_bytes"] >= 0
 
 
 def test_deterministic():

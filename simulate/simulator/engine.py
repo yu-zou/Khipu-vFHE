@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from simulator.events import Trace, EventType
+from simulator.events import Trace
 from simulator.cost_model import CostModel
 from simulator.pipeline import expand
 from simulator.resources import ResourcePool, ALL_RESOURCES
@@ -8,9 +8,9 @@ from simulator.resources import ResourcePool, ALL_RESOURCES
 @dataclass
 class SimResult:
     end_to_end_us: float
-    stage_breakdown_us: dict
-    resource_busy_us: dict
-    resource_utilization: dict
+    stage_breakdown_us: dict[str, float]
+    resource_busy_us: dict[str, float]
+    resource_utilization: dict[str, float]
     comms_us: float
     compute_us: float
     comms_compute_ratio: float
