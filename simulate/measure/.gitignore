@@ -1,0 +1,3 @@
+cpu_crypto_bench
+swiotlb_copy_bench
+pcie_bench
