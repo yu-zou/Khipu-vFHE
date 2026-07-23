@@ -1,0 +1,6 @@
+{
+  "ckks_add":                {"binary": "bench_add",       "context": "light",     "op": "EvalAdd"},
+  "ckks_mult_relin_rescale": {"binary": "bench_mult",      "context": "light",     "op": "EvalMult+Relin+Rescale"},
+  "ckks_rotate":             {"binary": "bench_rotate",    "context": "light",     "op": "EvalRotate(1)"},
+  "ckks_bootstrap":          {"binary": "bench_bootstrap", "context": "bootstrap", "op": "EvalBootstrap"}
+}
