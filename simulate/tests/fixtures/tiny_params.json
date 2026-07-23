@@ -1,0 +1,13 @@
+{
+  "meta": {"security_bits": 256, "aesni": true, "pclmulqdq": true},
+  "cpu_crypto": {
+    "aes_gcm": {"fixed_latency_us": 1.0, "throughput_curve": [[1024, 2.0], [1048576, 4.0]]},
+    "gmac":    {"fixed_latency_us": 0.5, "throughput_curve": [[1024, 8.0], [1048576, 10.0]]}
+  },
+  "swiotlb": {"map_unmap_fixed_us": 0.2, "private_to_shared_gbps": 10.0, "shared_to_private_gbps": 10.0},
+  "pcie": {
+    "h2d": {"fixed_latency_us": 1.0, "bandwidth_curve": [[65536, 20.0], [1048576, 25.0]]},
+    "d2h": {"fixed_latency_us": 1.0, "bandwidth_curve": [[65536, 20.0], [1048576, 25.0]]}
+  },
+  "gpu_crypto": {"mode": "pcie_line_rate", "aes_gcm_gbps": null, "gmac_gbps": null}
+}
