@@ -4,3 +4,5 @@ results/figures/
 *.nsys-rep
 *.sqlite
 data/traces/*.tmp
+trace/build/
+results/
