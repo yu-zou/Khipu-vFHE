@@ -1,0 +1,11 @@
+{
+  "workload": "ckks_add",
+  "keymode": "warm",
+  "source": {"nsys_file": "x.sqlite", "gpu": "H100 (non-CC)", "fideslib_commit": "b368ba6"},
+  "events": [
+    {"id": 0, "type": "DATA_H2D", "stream": 1, "size_bytes": 4096, "orig_start_us": 1.0, "orig_dur_us": 2.0, "kernel_name": null},
+    {"id": 1, "type": "KERNEL", "stream": 1, "size_bytes": 0, "orig_start_us": 5.0, "orig_dur_us": 10.0, "kernel_name": "add_kernel", "gpu_time_us": 10.0},
+    {"id": 2, "type": "DATA_D2H", "stream": 1, "size_bytes": 2048, "orig_start_us": 20.0, "orig_dur_us": 1.5, "kernel_name": null}
+  ],
+  "barriers": []
+}
